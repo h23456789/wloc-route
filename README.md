@@ -1,153 +1,300 @@
-WLOC 路線控制版：自架與使用
+<p align="center">
+  <img src="wloc.jpg" width="144" />
+</p>
 
-這個版本以原始 WLOC 專案為基礎，新增：
+# Apple WLOC 定位修改
 
-地圖點選建立路線
+修改 Apple 网络定位服务 (WiFi/基站) 返回的坐标，实现 iOS 网络定位虚拟定位。打开在线选点页面选位置即可生效，无需手动填经纬度。
 
-GPX 匯入（檔案只在瀏覽器本機解析）
+> ⚠️ **iOS 27 beta 6 起，系统已禁止对 `gs-loc.apple.com` 进行 MITM 拦截。** 目前该版本及之后的 beta 版本暂时无法使用本项目，等待后续适配方案。
 
-自訂速度
+---
 
-開始、暫停、繼續、停止
+## 订阅地址
 
-路線反轉與循環
+**Surge:**
+https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.sgmodule
 
-WLOC 總開關（關閉時保留設定並恢復真實定位）
+**Quantumult X:**
+https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.conf
 
-可命名儲存單點座標與 GPX／手繪路線
+**Loon:**
+https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.lpx
 
-關閉 Safari 後仍依開始時間計算路線進度
+**Stash:**
+https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.stoverride
 
-架構
+**Shadowrocket(小火箭):**
+https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.module
 
-worker/ 部署到你自己的 Cloudflare Worker，提供控制頁與地圖連結解析。
+> Egern 可直接使用 Surge 模块
+> Stash 请直接订阅上面的 `.stoverride`，无需用 Script Hub 转换
 
-dist/wloc.js 與 dist/wloc-settings.js 放在你自己的 GitHub Repository。
+### 默认扩展域名支持
 
-modules/ 內的代理模組會從你的 GitHub 載入這兩個腳本。
+默认模块已覆盖目前已知的完整 WLOC 域名集合：
 
-GPX 不會上傳 Cloudflare；按下「開始」後，最多 280 個簡化後路線點會寫入手機代理工具的 wloc_settings。
+- `gsp-ssl.ls.apple.com`
+- `bluedot.is.autonavi.com`
+- `bluedot.is.autonavi.com.gds.alibabadns.com`
 
-已命名儲存的單點與路線保存在瀏覽器 localStorage，不會寫入 Cloudflare。
 
-1. 建立 GitHub Repository
+---
 
-在 GitHub 建立公開 Repository：
+## 快捷指令（推荐，最方便）
 
-h23456789/wloc-route
+直接用快捷指令切换 / 清除定位，无需打开选点页面：
 
-把本專案全部檔案上傳到 main 分支。modules/ 內的腳本網址已預設指向這個 Repository。
+- **wloc 设置地理位置**：https://www.icloud.com/shortcuts/a82717d8fdad4e6280866fcf911173f7
+- **wloc 清理恢复位置**：https://www.icloud.com/shortcuts/f42632d406504f24a2cd163af4fe012f
 
-如果 Repository 名稱不同，請搜尋並替換：
+**用法**
 
-https://raw.githubusercontent.com/h23456789/wloc-route/refs/heads/main/
+- **设置位置：** 在地图 App 里选好位置（长按地图选点）→ 共享 → 选「wloc 设置地理位置」即可切换。
+  - 苹果地图：选点 → 共享 → 「wloc 设置地理位置」
+  - 高德地图：选点 → 分享 → **更多** → 「wloc 设置地理位置」
+- **清理位置：** 点「wloc 清理恢复位置」即可恢复真实定位。
 
-2. 部署 Cloudflare Worker
+支持苹果地图、高德（含短链，自动跟跳转 + GCJ-02→WGS84 坐标换算）。
 
-電腦需先安裝 Node.js，接著在終端機執行：
+> 前提：代理已开 + 模块已启用 + 信任 `gs-loc.apple.com`。选点页面（Worker / Pages）方案仍保留，见下方。
 
-cd worker
+---
+
+### 关于地图链接解析（worker）
+
+为了让苹果地图和高德走同一条流程，链接统一发给 `wloc-spoofer.wloc.workers.dev/api/parse` 解析：
+
+- **高德**：分享出来是短链，真实坐标只藏在 302 跳转的 `Location` 头里，且是 GCJ-02 偏移坐标。快捷指令既读不到跳转头、也难做坐标换算，所以由 worker 跟跳转 → 抠坐标 → GCJ-02→WGS84 → 返回经纬度。
+- **苹果地图**：链接里直接带 `coordinate=纬度,经度`，但在**中国大陆同样是 GCJ-02 偏移坐标**，所以和高德一样由 worker 做 GCJ-02→WGS84 换算后返回；境外坐标会自动跳过换算（`out_of_china` 判断）原样返回。除了统一坐标系，走同一接口也方便统一处理短链、文本夹链接、名称解码等。
+
+**隐私：** `/api/parse` 是纯转发解析——收到链接 → 跟跳转 → 解析坐标 → 返回 JSON，全程不写任何存储、不记日志、不缓存，处理完即丢（`wrangler.jsonc` 里已显式关闭 observability）。跟跳转时只接受 http/https，单次请求 8 秒超时、只读响应正文前 512 KB。
+
+**不放心可自行部署：** worker 源码完全开源，可自己部署一份替换上面的地址：
+
+- 路由：[`worker/src/index.js`](worker/src/index.js)
+- 链接解析与坐标换算：[`worker/src/parse.js`](worker/src/parse.js)
+- 选点页面：[`worker/src/page.js`](worker/src/page.js)、[`worker/src/gcj-browser.js`](worker/src/gcj-browser.js)
+- 部署后把快捷指令里的 `wloc-spoofer.wloc.workers.dev` 换成你自己的 worker 域名即可。
+
+解析逻辑带一套不联网的回归测试，改动后跑一下：
+
+```bash
+cd worker && npm install && npm test
+```
+
+**坐标系说明：** 页面内部一律以 WGS84 为准。底图切到「高德」时，瓦片画的是 GCJ-02
+地物，与 Leaflet 的 WGS84 像素映射差着一个偏移量（深圳一带约 600 米），页面会在
+选点/落点时自动双向换算，所以在任意底图上点选得到的都是同一个 WGS84 坐标。
+
+各家地图的坐标系不同，换算按「来源 × 地区」分派：
+
+| 来源 | 中国大陆 | 港澳台 |
+|------|----------|--------|
+| 苹果地图 / Google | GCJ-02，需换算 | **WGS84，不换算** |
+| 高德 / 百度 | GCJ-02 / BD-09，需换算 | 同左，仍需换算 |
+
+**港澳台建议优先用苹果或高德的链接。** 百度在港澳台的分享短链，坐标要靠网页脚本
+带反爬令牌去查，服务端取不到；变通办法是在浏览器打开该链接，等地址栏变成
+`map.baidu.com/poi/名称/@数字,数字,19z` 之后复制整条地址再粘贴——但百度的针脚位置
+与苹果/高德常有几十到两百米的出入（大陆约 5 米，港澳台可达 240 米），精确定位时
+不建议用它。
+
+---
+
+<details>
+<summary><b>使用方法</b></summary>
+
+1. 订阅模块并启用 MITM
+2. 打开在线选点页面（公共 Worker，建议添加到主屏幕）
+3. 地图选位置 / 搜索地名 / 粘贴地图链接
+4. 点击「储存到设备」
+5. 下次 Apple 定位触发时自动生效
+
+支持 Apple Maps / Google Maps / 高德 / 百度 / 坐标文本 链接解析。
+
+> **iOS 26/27 及更高版本注意：** Apple 从 iOS 26 开始大幅强化了 `locationd` 的定位缓存机制，系统会将之前获取的真实定位结果缓存在内存中并长时间复用。这意味着安装模块或切换目标坐标后，即使脚本已成功修改了 WLOC 响应（日志显示"已修改"），系统仍可能继续使用缓存中的旧坐标，导致定位看起来没有变化。
+>
+> **解决方法：重启设备。** 重启会清空 `locationd` 的内存缓存，系统重新发起 WLOC 请求时会拿到修改后的坐标。飞行模式开关、关闭定位服务等方式在 iOS 26+ 上**无法**清除此缓存，必须重启。iOS 15~18 通常不需要重启即可生效。
+
+**高版本系统推荐操作流程（成功率最高）：**
+
+方法一：
+1. 先在选点页面选好需要修改的定位并储存到设备
+2. 开飞行模式 → 关闭定位服务 → 重启设备
+3. 关闭飞行模式（WiFi 也要关）→ 连接代理工具（确认 VPN 图标出现）→ 打开定位服务
+4. 打开地图验证
+
+方法二：
+1. 关闭定位服务
+2. 在选点页面选好位置并储存到设备
+3. 打开定位服务 → 弹出「允许访问位置信息」时选择**「下次询问或在我共享时」**
+4. 打开地图验证
+
+</details>
+
+<details>
+<summary><b>工作原理</b></summary>
+
+```
+选点页面 → fetch gs-loc.apple.com/wloc-settings/save?lon=x&lat=y
+         → 代理模块拦截 → wloc-settings.js 写入 $persistentStore
+         → 下次 WLOC 触发 → wloc.js 读取坐标 → patch protobuf 响应
+```
+
+模块包含两条规则：
+- `wloc.js` — 拦截 `/clls/wloc` 响应，解析 protobuf 并替换坐标
+- `wloc-settings.js` — 拦截 `/wloc-settings/save` 请求，写入持久化存储
+
+</details>
+
+<details>
+<summary><b>参数配置</b></summary>
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| longitude | 目标经度(在线选点优先) | null (透传) |
+| latitude | 目标纬度(在线选点优先) | null (透传) |
+| accuracy | 精度(米) | 25 |
+| randomRadius | 扰动半径(米)，每次定位在目标点周围随机偏移，0=关闭 | 0 |
+| logLevel | 日志级别 | info |
+
+优先级: 在线选点储存 > 模块参数 > 默认值
+
+> **扰动半径说明：** 启用后每次定位响应会在目标坐标周围指定米数内随机偏移，避免每次定位结果完全相同。Surge/Loon/Stash/Shadowrocket 可在模块参数中设置；QX 用户可通过选点页面设置。默认 0（关闭），不影响现有用户。
+
+</details>
+
+<details>
+<summary><b>取消虚拟定位 / 恢复真实定位</b></summary>
+
+**方法一：关闭或删除模块**（推荐）
+
+关闭模块后脚本不再拦截 WLOC 请求，系统自动恢复真实定位。iOS 26+ 需要重启设备清除定位缓存。
+
+**方法二：清除持久化数据（透传模式）**
+
+清除已保存的坐标后，脚本进入**透传模式**——不修改 WLOC 响应，直接放行原始数据，系统自动恢复真实 GPS 定位。
+
+**透传模式触发条件：** 持久化数据为空（null）且模块参数为默认值（113.94114, 22.544577）时，脚本判定用户未自定义坐标，自动跳过修改。模块默认参数无需更改，仅清除持久化数据即可触发透传。
+
+在代理工具中删除持久化数据，字段名为 `wloc_settings`：
+
+- **Surge** — 脚本编辑器运行: `$persistentStore.write(null, "wloc_settings")`
+- **Quantumult X** — 运行: `$prefs.removeValueForKey("wloc_settings")`
+- **Loon** — 运行: `$persistentStore.write(null, "wloc_settings")`
+
+清除后重启设备即可恢复真实定位。无需关闭模块，脚本会自动检测到无自定义坐标并跳过修改。
+
+> **注意：** 如果用户在模块参数中手动修改了经纬度（非默认 113.94114, 22.544577），即使清除持久化数据，脚本仍会使用模块参数中的坐标进行修改。只有保持默认参数不变时，清除持久化数据才会进入透传模式。
+
+</details>
+
+<details>
+<summary><b>收藏位置功能</b></summary>
+
+在线选点页面支持收藏多个位置，方便来回切换：
+
+- **添加收藏**：选好位置后点击「收藏位置」→ 输入备注名称（支持中文/英文/数字，最多 30 字）→ 保存
+- **快速切换**：点击收藏列表中的位置 → 地图自动跳转 → 点「储存到设备」即可切换
+- **当前生效标记**：与设备已保存坐标一致的收藏会显示「✓ 当前生效」
+- **删除管理**：单个删除（×按钮）或清空全部
+- **当前生效坐标**：页面显示设备端持久化数据（wloc_settings），支持刷新查询和清除
+
+**数据存储说明：**
+- **收藏列表** → 保存在浏览器 `localStorage`（仅用于选点页面的 UI 便捷操作）
+- **生效坐标** → 保存在代理工具持久化存储 `$persistentStore`（脚本运行时实际读取的数据）
+
+两者独立存储。收藏列表是浏览器端的辅助数据，清除浏览器缓存或换浏览器后需重新收藏，但不影响已储存到设备的生效坐标。
+
+</details>
+
+<details>
+<summary><b>自部署 Worker（推荐）</b></summary>
+
+公共选点页面有请求上限，建议部署自己的实例：
+
+- **Workers**: `https://wloc-spoofer.wloc.workers.dev/`
+- **Pages**: `https://wloc-pages.pages.dev/`
+
+**一键部署（Workers）：**
+
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Yu9191/wloc/tree/main/worker)
+
+> 一键部署仅支持 Workers 模式，点击按钮后按提示授权即可完成部署。
+
+**手动部署（Workers）：**
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/Yu9191/wloc.git
+cd wloc/worker
+
+# 2. 安装依赖
 npm install
-npm test
+
+# 3. 登录 Cloudflare（首次需要）
 npx wrangler login
+
+# 4. 部署
 npm run deploy
+```
 
-完成後 Cloudflare 會顯示你的網址，例如：
+部署成功后会得到你自己的 Worker 地址（如 `https://wloc-spoofer.<你的子域名>.workers.dev`），用这个地址选点即可。
 
-https://wloc-spoofer.<你的 Cloudflare 子網域>.workers.dev/
+> 免费账户每天 10 万次请求，个人使用完全够用。
 
-開啟網址後應可看到「單點定位／路線移動」切換。
+<details>
+<summary>高级：Pages 部署</summary>
 
-3. 安裝自己的代理模組
+Pages 部署不支持一键按钮，需要手动执行：
 
-依使用的代理工具選擇：
+```bash
+git clone https://github.com/Yu9191/wloc.git
+cd wloc/worker
+npm install
+npm run pages:deploy
+```
 
-工具
+> 必须走 `npm run pages:deploy`（它带 `-c wrangler.pages.jsonc`）。直接跑
+> `wrangler pages deploy dist` 会丢掉配置里的 compatibility 设定。
 
-模組檔案
+部署时会提示设置 production branch，输入 `main` 即可。部署成功后得到 `https://<项目名>.pages.dev` 地址。
 
-Shadowrocket
+Pages 和 Workers 功能完全一致，按需选择即可。
 
-modules/wloc.module
+</details>
 
-Surge / Egern
+</details>
 
-modules/wloc.sgmodule
+<details>
+<summary><b>注意事项</b></summary>
 
-Quantumult X
+- 需要 MITM 证书信任 `gs-loc.apple.com` 和 `gs-loc-cn.apple.com`
+- 仅修改网络定位(WiFi/基站)，不影响 GPS 硬件定位
+- iOS 在 GPS 信号强时可能忽略网络定位结果
+- 适用于 WiFi 定位为主的室内场景效果最佳
+- 选点页面需在代理模式下使用（Safari 走代理才能拦截储存请求）
 
-modules/wloc.conf
+</details>
 
-Loon
+---
 
-modules/wloc.lpx
+## 致谢
 
-Stash
+- [proxypin-wloc-spoofer](https://github.com/FFF686868/proxypin-wloc-spoofer) - 原始 WLOC 定位修改思路 by FFF686868
+- [NSNanoCat/Util](https://github.com/NSNanoCat/util) - 跨平台脚本工具框架
 
-modules/wloc.stoverride
+### 贡献者
 
-代理模組必須啟用 MITM，並信任代理工具安裝的憑證。
+- [@YmlyZA](https://github.com/YmlyZA) - 百度地图支持、港澳台边界处理、GCJ 换算优化、回归测试覆盖 ([#83](https://github.com/Yu9191/wloc/pull/83))
+- [@YeTianXingShi](https://github.com/YeTianXingShi) - randomRadius 随机坐标扰动功能原始实现 ([#70](https://github.com/Yu9191/wloc/pull/70))
+- [@SajoLuo](https://github.com/SajoLuo) - Stash 响应格式修复 ([#66](https://github.com/Yu9191/wloc/pull/66))
+- [@SkywardLab](https://github.com/SkywardLab) - 扩展 WLOC 备用域名拦截 ([#90](https://github.com/Yu9191/wloc/pull/90))
+- [@beiming0000](https://github.com/beiming0000) - 逗号小数格式坐标丢失问题报告 ([#96](https://github.com/Yu9191/wloc/issues/96))
 
-4. 路線模式
+---
 
-開啟自己的 Worker 網址。
+## 许可证
 
-選「路線移動」。
-
-在地圖依序點選路線，或匯入 .gpx。
-
-設定速度與是否循環。
-
-按「開始」。
-
-開始後，路線、速度與開始時間會一次寫入手機代理工具。WLOC 每次收到 Apple 網路定位請求時才計算當下位置，不需要 Safari 每秒持續執行。
-
-「停止」會把當時的計算位置改存成一般單點；「清除資料」則恢復透傳真實定位。
-
-WLOC 總開關與恢復真實定位
-
-關閉控制頁上方的「WLOC 虛擬定位」後，代理腳本會保留目前的單點或路線資料，但停止修改 Apple 定位回應。若當時正在走路線，會先凍結進度；重新開啟時從原本位置繼續。
-
-恢復真實定位建議順序：
-
-關閉 WLOC 總開關。
-
-關閉 iPhone 定位服務。
-
-等幾秒後重新開啟定位服務。
-
-開啟 Apple 地圖確認真實位置。
-
-iOS 26 以上若仍使用舊定位快取，請在關閉 WLOC 與定位服務後重新啟動 iPhone。
-
-儲存單點與路線
-
-單點：選好位置後按「收藏位置」，輸入名稱即可保存。
-
-路線：匯入 GPX 或在地圖畫好路線後按「儲存路線」，輸入名稱即可保存。
-
-點擊已保存項目可重新載入；刪除只會移除瀏覽器內的收藏，不會自動改變目前生效的裝置定位。
-
-限制
-
-路線最多寫入 280 個點；較大的 GPX 會在瀏覽器依路程等距簡化。
-
-手動畫線是節點間直線，不會自動沿道路導航。
-
-WLOC 修改的是 Apple 網路定位回應，不是 GPS 硬體。
-
-iOS 26 以上的 locationd 快取可能使新位置延遲生效；必要時需依原專案說明重新啟動裝置。
-
-iOS 27 beta 6 起，Apple 已限制 gs-loc.apple.com 的 MITM；受影響版本無法使用此方法。
-
-隱私
-
-不使用 KV、D1、R2 或其他資料庫。
-
-Cloudflare Worker 的 observability 維持關閉。
-
-GPX 由瀏覽器的 FileReader 與 DOMParser 本機解析，不會傳到 Worker。
-
-地圖圖磚與地名搜尋仍會連線到頁面設定的地圖服務；地圖連結解析會由你的 Worker 連線到對應地圖服務。
-
-本專案延續原專案的 AGPL-3.0 授權；原作者與授權資訊請見 README.md、LICENSE 與 Git 歷史。
+本项目采用 [AGPL-3.0](LICENSE) 许可证。未经授权，禁止将本项目代码用于商业产品或上架应用商店。
