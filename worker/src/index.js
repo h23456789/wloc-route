@@ -7,7 +7,6 @@ const app = new Hono();
 app.get("/", (c) => {
   return c.html(getPageHtml({
     googleMapsApiKey: c.env.GOOGLE_MAPS_API_KEY || "",
-    appleMapKitToken: c.env.APPLE_MAPKIT_TOKEN || "",
   }));
 });
 

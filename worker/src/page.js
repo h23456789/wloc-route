@@ -1,6 +1,6 @@
-export function getPageHtml({ googleMapsApiKey = "", appleMapKitToken = "" } = {}) {
+export function getPageHtml({ googleMapsApiKey = "" } = {}) {
   // 官方地圖 SDK 必須在瀏覽器取得憑證；這只避免把設定值提交至 GitHub。
-  const mapConfig = JSON.stringify({ googleMapsApiKey, appleMapKitToken }).replace(/</g, "\\u003c");
+  const mapConfig = JSON.stringify({ googleMapsApiKey }).replace(/</g, "\\u003c");
   return `<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -14,14 +14,15 @@ export function getPageHtml({ googleMapsApiKey = "", appleMapKitToken = "" } = {
 <style>
 :root { --blue:#007aff; --green:#34c759; --red:#ff3b30; --gray:#8e8e93; --bg:#f2f2f7; --orange:#ff9500; }
 * { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; }
 body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif; background:var(--bg); }
-#map { height:70vh; width:100%; min-height:420px; }
-.map-shell { position:relative; background:#dce7ee; }
+#map { height:100dvh; width:100%; min-height:420px; }
+.map-shell { position:relative; width:100%; height:100dvh; background:#dce7ee; }
 .map-topbar { position:absolute; z-index:1200; top:max(10px,env(safe-area-inset-top)); left:10px; right:10px; display:flex; gap:7px; align-items:center; pointer-events:none; }
 .map-topbar > * { pointer-events:auto; }
-.map-search { flex:1; display:flex; min-width:0; background:rgba(255,255,255,.96); border-radius:12px; box-shadow:0 3px 14px rgba(0,0,0,.2); overflow:hidden; }
-.map-search input { min-width:0; flex:1; border:0; padding:12px; font-size:16px; outline:0; background:transparent; }
-.map-search button { border:0; color:#fff; background:var(--blue); padding:0 15px; font-size:14px; font-weight:700; }
+.map-status-pill { flex:1; min-width:0; padding:13px; background:rgba(255,255,255,.96); border-radius:12px; box-shadow:0 3px 14px rgba(0,0,0,.2); color:#333; font:600 13px/1.2 "SF Mono",monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.map-config-error { position:absolute; inset:50% auto auto 50%; transform:translate(-50%,-50%); width:min(340px,calc(100% - 100px)); padding:18px; border-radius:16px; background:rgba(255,255,255,.96); color:#333; box-shadow:0 8px 30px rgba(0,0,0,.2); text-align:center; font-size:14px; line-height:1.55; }
+.map-config-error b { display:block; margin-bottom:5px; font-size:16px; }
 .float-tools { position:absolute; z-index:1150; display:flex; flex-direction:column; gap:7px; }
 .float-tools.left { top:72px; left:10px; }
 .float-tools.right { top:72px; right:10px; }
@@ -29,7 +30,6 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .float-btn small { font-size:10px; line-height:1.1; margin-top:2px; }
 .float-btn.active { background:var(--blue); color:#fff; }
 .float-btn.danger.active { background:var(--green); }
-.provider-menu { position:absolute; z-index:1200; right:65px; top:72px; display:flex; gap:5px; padding:4px; border-radius:10px; background:rgba(255,255,255,.95); box-shadow:0 2px 10px rgba(0,0,0,.18); }
 .joystick-panel { position:absolute; z-index:1200; left:50%; bottom:18px; transform:translateX(-50%); display:none; align-items:center; gap:12px; }
 .joystick-panel.show { display:flex; }
 .joystick { position:relative; width:164px; height:164px; border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 4px 18px rgba(0,0,0,.25); touch-action:none; }
@@ -39,7 +39,13 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .joy-center { position:absolute; left:58px; top:58px; width:48px; height:48px; border-radius:50%; background:#fff; border:3px solid #5d91ee; display:flex; align-items:center; justify-content:center; color:#5d91ee; font-size:18px; }
 .joy-status { background:rgba(25,25,28,.82); color:#fff; border-radius:12px; padding:9px 11px; font-size:12px; line-height:1.4; min-width:112px; text-align:center; }
 .joy-status input { width:62px; margin:5px 2px; padding:5px; border:0; border-radius:6px; font-size:14px; text-align:center; }
-.panel { padding:16px; max-width:600px; margin:0 auto; }
+.panel-backdrop { position:fixed; inset:0; z-index:5000; background:rgba(15,23,42,.38); opacity:0; pointer-events:none; transition:opacity .2s; }
+.panel-backdrop.show { opacity:1; pointer-events:auto; }
+.panel { position:fixed; z-index:5100; left:50%; bottom:max(10px,env(safe-area-inset-bottom)); width:min(620px,calc(100% - 18px)); max-height:82dvh; padding:54px 14px 14px; overflow:auto; border-radius:22px; background:rgba(242,242,247,.97); box-shadow:0 14px 50px rgba(0,0,0,.32); transform:translate(-50%,calc(100% + 30px)); opacity:0; pointer-events:none; transition:transform .24s ease,opacity .2s; }
+.panel.show { transform:translate(-50%,0); opacity:1; pointer-events:auto; }
+.panel-head { position:sticky; z-index:4; top:-54px; height:48px; margin:-54px -14px 10px; padding:7px 10px 7px 16px; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.97); border-bottom:1px solid rgba(0,0,0,.08); }
+.panel-head strong { font-size:16px; }
+.panel-close { width:34px; height:34px; border:0; border-radius:50%; background:#e5e5ea; color:#333; font-size:20px; }
 .card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
 .card h3 { font-size:15px; font-weight:600; margin-bottom:10px; }
 .coords { font-family:"SF Mono",monospace; font-size:14px; color:#333; padding:8px 12px; background:var(--bg); border-radius:8px; word-break:break-all; }
@@ -84,10 +90,6 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .modal input:focus { border-color:var(--blue); }
 .modal .modal-btns { display:flex; gap:8px; }
 .modal .modal-btns .btn { padding:12px; }
-.layer-switch { position:absolute; top:10px; right:10px; z-index:1000; display:flex; gap:4px; background:rgba(255,255,255,.92); border-radius:8px; padding:4px; box-shadow:0 2px 8px rgba(0,0,0,.15); }
-.layer-btn { border:none; background:transparent; padding:6px 10px; border-radius:6px; font-size:12px; font-weight:500; color:#333; cursor:pointer; transition:all .15s; white-space:nowrap; }
-.layer-btn.active { background:var(--blue); color:#fff; }
-.layer-btn:active { transform:scale(.95); }
 .mode-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:4px; background:var(--bg); border-radius:10px; margin-bottom:12px; }
 .mode-tab { border:0; background:transparent; border-radius:8px; padding:9px 8px; color:#666; font-size:14px; font-weight:600; cursor:pointer; }
 .mode-tab.active { background:#fff; color:var(--blue); box-shadow:0 1px 4px rgba(0,0,0,.12); }
@@ -123,31 +125,27 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .saved-route-main { flex:1; min-width:0; cursor:pointer; }
 .saved-route-name { font-size:14px; font-weight:600; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .saved-route-meta { font-size:11px; color:var(--gray); margin-top:2px; }
-@media(max-width:480px) { #map { height:72vh; min-height:480px; } .panel { padding:12px; } .layer-btn { padding:6px 8px; font-size:11px; } .float-btn { width:44px; min-height:44px; } .joystick { width:148px; height:148px; } .joy-btn { width:48px; height:48px; } .joy-n { top:5px; left:50px; }.joy-e { right:5px; top:50px; }.joy-s { bottom:5px; left:50px; }.joy-w { left:5px; top:50px; }.joy-center { left:52px; top:52px; width:44px; height:44px; } }
+@media(max-width:480px) { #map,.map-shell { height:100dvh; min-height:480px; } .panel { width:calc(100% - 14px); } .float-btn { width:44px; min-height:44px; } .joystick { width:148px; height:148px; } .joy-btn { width:48px; height:48px; } .joy-n { top:5px; left:50px; }.joy-e { right:5px; top:50px; }.joy-s { bottom:5px; left:50px; }.joy-w { left:5px; top:50px; }.joy-center { left:52px; top:52px; width:44px; height:44px; } }
 </style>
 </head>
 <body>
 <div class="map-shell">
 <div id="map"></div>
 <div class="map-topbar">
-  <button class="float-btn" onclick="scrollToControls()" aria-label="開啟控制面板">☰</button>
-  <div class="map-search"><input id="floatingInput" placeholder="輸入座標或貼上 Apple／Google 地圖連結" /><button onclick="parseFloatingInput()">前往</button></div>
+  <button class="float-btn" onclick="openToolPanel('controlPanel','WLOC 設定')" aria-label="開啟控制面板">☰</button>
+  <div class="map-status-pill" id="floatingCoords">尚未選擇位置</div>
 </div>
 <div class="float-tools left" aria-label="定位工具">
-  <button class="float-btn active" id="floatPointBtn" onclick="setMode('point')" aria-label="單點定位">⌖<small>單點</small></button>
-  <button class="float-btn" id="floatRouteBtn" onclick="setMode('route')" aria-label="手繪路線">⌁<small>路線</small></button>
+  <button class="float-btn active" id="floatPointBtn" onclick="setMode('point');openToolPanel('targetPanel','單點定位')" aria-label="單點定位">⌖<small>單點</small></button>
+  <button class="float-btn" id="floatRouteBtn" onclick="setMode('route');openToolPanel('controlPanel','路線設定')" aria-label="手繪路線">⌁<small>路線</small></button>
   <button class="float-btn" id="floatJoystickBtn" onclick="setMode('joystick')" aria-label="搖桿模式">✥<small>搖桿</small></button>
   <button class="float-btn" onclick="document.getElementById('gpxInput').click()" aria-label="匯入 GPX">GPX</button>
-  <button class="float-btn" onclick="scrollToSaved()" aria-label="已儲存項目">▣<small>儲存</small></button>
+  <button class="float-btn" onclick="openInputPanel()" aria-label="輸入座標或地圖連結">↗<small>輸入</small></button>
+  <button class="float-btn" onclick="openSavedPanel()" aria-label="已儲存項目">▣<small>儲存</small></button>
 </div>
 <div class="float-tools right" aria-label="地圖工具">
   <button class="float-btn" onclick="locateMe()" aria-label="目前位置">◎<small>定位</small></button>
   <button class="float-btn danger active" id="northLockBtn" onclick="toggleNorthLock()" aria-pressed="true" aria-label="固定向北">N<small>已鎖北</small></button>
-  <button class="float-btn" onclick="toggleProviderMenu()" aria-label="切換地圖">▱<small>地圖</small></button>
-</div>
-<div class="provider-menu" id="providerMenu" hidden>
-  <button class="layer-btn active" data-layer="google" onclick="switchMapProvider('google')">Google 地圖</button>
-  <button class="layer-btn" data-layer="apple" onclick="switchMapProvider('apple')">Apple 地圖</button>
 </div>
 <div class="joystick-panel" id="joystickPanel">
   <div class="joystick" aria-label="方向搖桿">
@@ -160,7 +158,9 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
   <div class="joy-status"><b>移動速度</b><br><input id="joySpeedInput" type="number" min="0.5" max="300" step="0.5" value="4.5"> km/h<br><span id="joyState">按住方向移動</span></div>
 </div>
 </div>
+<div class="panel-backdrop" id="panelBackdrop" onclick="closeToolPanel()"></div>
 <div class="panel">
+  <div class="panel-head"><strong id="panelTitle">功能設定</strong><button class="panel-close" onclick="closeToolPanel()" aria-label="關閉">×</button></div>
   <div class="error-banner" id="errorBanner">
     <b>模組未生效</b>
     請檢查以下配置：<br>
@@ -209,7 +209,7 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
       <div id="savedRouteList" class="saved-route-list"></div>
     </div>
   </div>
-  <div class="card" id="savedItemsPanel">
+  <div class="card" id="targetPanel">
     <h3>選擇目標位置</h3>
     <div class="coords" id="coords">點選地圖或使用下方工具選擇位置</div>
     <div class="input-row" style="margin-top:10px">
@@ -224,14 +224,14 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
       <button class="btn btn-secondary" onclick="locateMe()">當前位置</button>
     </div>
   </div>
-  <div class="card">
+  <div class="card" id="favoritesPanel">
     <div class="fav-header">
       <h3>已儲存的單點座標</h3>
       <button class="btn btn-sm btn-secondary" onclick="clearAllFav()" id="clearAllBtn" style="display:none">清空全部</button>
     </div>
     <div id="favList" class="fav-list"></div>
   </div>
-  <div class="card">
+  <div class="card" id="activePanel">
     <h3>當前生效座標</h3>
     <div class="active-loc" id="activeLoc">
       <div class="label">裝置持久化資料 (wloc_settings)</div>
@@ -242,15 +242,15 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
       <button class="btn btn-sm btn-danger" onclick="clearActive()">清除資料</button>
     </div>
   </div>
-  <div class="card">
+  <div class="card" id="inputPanel">
     <h3>貼上地圖連結</h3>
     <div class="input-row">
-      <input id="urlInput" placeholder="Apple / Google 地圖連結或經緯度" />
+      <input id="urlInput" placeholder="Google 地圖連結或經緯度" />
       <button class="btn btn-secondary" style="flex:none;min-width:56px" onclick="parseUrl()">解析</button>
     </div>
-    <div style="font-size:11px;color:var(--gray);margin-top:6px">只支援 Apple Maps、Google Maps 與座標文字</div>
+    <div style="font-size:11px;color:var(--gray);margin-top:6px">支援 Google Maps 與座標文字</div>
   </div>
-  <div class="card">
+  <div class="card" id="searchPanel">
     <h3>搜尋地點</h3>
     <div class="input-row">
       <input id="searchInput" placeholder="輸入地名（如: 上海外灘）" />
@@ -298,16 +298,14 @@ let routeTimer = null;
 let routeSuggestedName = '';
 let routeSource = 'manual';
 let wlocEnabled = false;
-let mapProvider = 'google';
 let northLocked = true;
 let joystickTimer = null;
 let joystickSaving = false;
 let joystickLastSave = 0;
 let googleMap, googleMarker, googleRouteLine, googleRouteMarkers = [];
-let appleMap, appleMarker, appleRouteItems = [];
 
 function mapError(message) {
-  document.getElementById('map').innerHTML = '<div style="padding:24px;text-align:center;font-size:14px;color:#8e8e93;line-height:1.6">' + message + '<\\/div>';
+  document.getElementById('map').innerHTML = '<div class="map-config-error"><b>地圖尚未啟用<\/b>' + message + '<br><br>請到 Cloudflare Worker 的「Settings → Variables and Secrets」設定後重新部署。<\/div>';
 }
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -327,26 +325,11 @@ async function initGoogleMap() {
   googleMap.addListener('heading_changed', () => { if (northLocked && googleMap.getHeading()) googleMap.setHeading(0); });
   renderMapObjects();
 }
-async function initAppleMap() {
-  if (!MAP_CONFIG.appleMapKitToken) return mapError('尚未設定 Apple 地圖權杖。請在 Cloudflare 新增 APPLE_MAPKIT_TOKEN。');
-  if (!window.mapkit) await loadScript('https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.core.js');
-  mapkit.init({authorizationCallback: done => done(MAP_CONFIG.appleMapKitToken), language:'zh-Hant'});
-  appleMap = new mapkit.Map('map');
-  appleMap.rotationEnabled = !northLocked;
-  if (northLocked) appleMap.rotation = 0;
-  appleMap.region = new mapkit.CoordinateRegion(new mapkit.Coordinate(lat, lon), new mapkit.CoordinateSpan(0.08, 0.08));
-  appleMap.addEventListener('click', e => { if (e.coordinate) handleMapPick(e.coordinate.latitude, e.coordinate.longitude); });
-  renderMapObjects();
-}
-async function switchMapProvider(provider) {
-  mapProvider = provider;
+async function initMap() {
   googleMap = undefined; googleMarker = undefined; googleRouteLine = undefined; googleRouteMarkers = [];
-  appleMap = undefined; appleMarker = undefined; appleRouteItems = [];
   document.getElementById('map').innerHTML = '';
-  document.querySelectorAll('.layer-btn').forEach(b => b.classList.toggle('active', b.dataset.layer === provider));
-  try { if (provider === 'apple') await initAppleMap(); else await initGoogleMap(); }
-  catch (e) { mapError(provider === 'apple' ? 'Apple 地圖載入失敗，請檢查 MapKit JS 權杖與網域設定。' : 'Google 地圖載入失敗，請檢查 API 金鑰與網域限制。'); }
-  document.getElementById('providerMenu').hidden = true;
+  try { await initGoogleMap(); }
+  catch (e) { mapError('Google 地圖載入失敗，請檢查 API 金鑰、網域限制及 Maps JavaScript API 是否已啟用。'); }
 }
 function renderMapObjects() {
   if (googleMap) {
@@ -357,27 +340,14 @@ function renderMapObjects() {
     if (googleMarker) googleMarker.addListener('dragend', e => setPos(e.latLng.lat(), e.latLng.lng()));
     if (routePoints.length > 1) googleRouteLine = new google.maps.Polyline({path:routePoints.map(p => ({lat:p[0],lng:p[1]})),strokeColor:'#007aff',strokeOpacity:.9,strokeWeight:5,map:googleMap});
     if (routePoints.length <= 40) routePoints.forEach((p, i) => { const m = new google.maps.Marker({position:{lat:p[0],lng:p[1]},map:googleMap,draggable:true,label:String(i+1)}); m.addListener('dragend', e => { routePoints[i]=[e.latLng.lat(),e.latLng.lng()]; renderRoute(); }); googleRouteMarkers.push(m); });
-    return;
-  }
-  if (appleMap) {
-    appleMap.removeAnnotations(appleMap.annotations || []); appleMap.removeOverlays(appleMap.overlays || []);
-    if (mode === 'point') appleMap.addAnnotation(new mapkit.MarkerAnnotation(new mapkit.Coordinate(lat, lon), {title:'目標位置'}));
-    if (routePoints.length > 1) appleMap.addOverlay(new mapkit.PolylineOverlay(routePoints.map(p => new mapkit.Coordinate(p[0],p[1])), {style:new mapkit.Style({strokeColor:'#007aff',lineWidth:5})}));
-    if (routePoints.length <= 40) routePoints.forEach((p,i) => appleMap.addAnnotation(new mapkit.MarkerAnnotation(new mapkit.Coordinate(p[0],p[1]), {title:'路線點 '+(i+1)})));
   }
 }
 function moveMapTo(la, lo, zoom) {
   if (googleMap) googleMap.setCenter({lat:la,lng:lo}), googleMap.setZoom(zoom || 15);
-  if (appleMap) appleMap.region = new mapkit.CoordinateRegion(new mapkit.Coordinate(la,lo), new mapkit.CoordinateSpan(.015,.015));
 }
 function fitRoute() {
   if (routePoints.length < 2) return;
   if (googleMap) { const b = new google.maps.LatLngBounds(); routePoints.forEach(p => b.extend({lat:p[0],lng:p[1]})); googleMap.fitBounds(b, 24); }
-  if (appleMap) { const lats=routePoints.map(p=>p[0]), lons=routePoints.map(p=>p[1]); appleMap.region = new mapkit.CoordinateRegion(new mapkit.Coordinate((Math.min(...lats)+Math.max(...lats))/2,(Math.min(...lons)+Math.max(...lons))/2),new mapkit.CoordinateSpan(Math.max(.005,Math.max(...lats)-Math.min(...lats))*1.3,Math.max(.005,Math.max(...lons)-Math.min(...lons))*1.3)); }
-}
-function toggleProviderMenu() {
-  const menu = document.getElementById('providerMenu');
-  menu.hidden = !menu.hidden;
 }
 function toggleNorthLock() {
   northLocked = !northLocked;
@@ -389,16 +359,29 @@ function toggleNorthLock() {
     googleMap.setOptions({headingInteractionEnabled:!northLocked});
     if (northLocked) { googleMap.setHeading(0); googleMap.setTilt(0); }
   }
-  if (appleMap) { appleMap.rotationEnabled = !northLocked; if (northLocked) appleMap.rotation = 0; }
   toast(northLocked ? '地圖已固定向北' : '已允許旋轉地圖');
 }
-function scrollToControls() { document.getElementById('controlPanel').scrollIntoView({behavior:'smooth',block:'start'}); }
-function scrollToSaved() { document.getElementById('savedItemsPanel').scrollIntoView({behavior:'smooth',block:'start'}); }
-function parseFloatingInput() {
-  const value = document.getElementById('floatingInput').value.trim();
-  if (!value) return toast('請輸入座標或貼上地圖連結');
-  document.getElementById('urlInput').value = value;
-  parseUrl();
+function openToolPanel(targetId, title) {
+  const panel = document.querySelector('.panel');
+  document.getElementById('panelTitle').textContent = title || '功能設定';
+  panel.classList.add('show');
+  document.getElementById('panelBackdrop').classList.add('show');
+  requestAnimationFrame(() => {
+    const target = document.getElementById(targetId);
+    if (target) panel.scrollTo({top:Math.max(0,target.offsetTop-58),behavior:'smooth'});
+  });
+}
+function closeToolPanel() {
+  document.querySelector('.panel').classList.remove('show');
+  document.getElementById('panelBackdrop').classList.remove('show');
+}
+function openInputPanel() {
+  openToolPanel('inputPanel','輸入位置');
+  setTimeout(() => document.getElementById('urlInput').focus(), 280);
+}
+function openSavedPanel() {
+  if (mode === 'route') openToolPanel('controlPanel','已儲存路線');
+  else openToolPanel('favoritesPanel','已儲存的單點座標');
 }
 
 // 引數恆為 WGS84。
@@ -406,6 +389,7 @@ function setPos(newLat, newLon) {
   lat = newLat; lon = newLon; selected = true;
   renderMapObjects();
   document.getElementById('coords').textContent = '經度 ' + lon.toFixed(6) + '  緯度 ' + lat.toFixed(6);
+  document.getElementById('floatingCoords').textContent = lon.toFixed(6) + ', ' + lat.toFixed(6);
 }
 
 function moveTo(newLat, newLon, zoom) {
@@ -443,7 +427,6 @@ function setMode(nextMode) {
 function currentMapHeading() {
   if (northLocked) return 0;
   if (googleMap && Number.isFinite(googleMap.getHeading())) return googleMap.getHeading();
-  if (appleMap && Number.isFinite(appleMap.rotation)) return appleMap.rotation;
   return 0;
 }
 function moveByBearing(bearing, elapsedMs) {
@@ -676,6 +659,7 @@ function importGpx(event) {
       routeSource = 'gpx';
       if (routePoints.length < 2) throw new Error('GPX 內沒有足夠的路線點');
       setMode('route');
+      openToolPanel('controlPanel','GPX 路線設定');
       renderRoute();
       fitRoute();
       toast('已匯入 ' + parsed.length + ' 點，裝置儲存使用 ' + routePoints.length + ' 點');
@@ -1024,7 +1008,7 @@ function parseMapUrl(text) {
 }
 
 // 含連結的輸入交給服務端 /api/parse: 瀏覽器讀不到跨域跳轉資訊，
-// 因此由 Worker 解析 Apple / Google 連結。
+// 因此由 Worker 解析 Google 地圖連結。
 // 純座標文字本地直接解析 —— 它也是唯一不需要座標系換算的輸入, 免去一次往返。
 async function parseUrl() {
   const input = document.getElementById('urlInput').value.trim();
@@ -1082,9 +1066,9 @@ document.addEventListener('paste', e => {
 });
 document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') searchPlace(); });
 document.getElementById('urlInput').addEventListener('keydown', e => { if(e.key==='Enter') parseUrl(); });
-document.getElementById('floatingInput').addEventListener('keydown', e => { if(e.key==='Enter') parseFloatingInput(); });
 document.getElementById('favNameInput').addEventListener('keydown', e => { if(e.key==='Enter') confirmFav(); });
 document.getElementById('routeNameInput').addEventListener('keydown', e => { if(e.key==='Enter') confirmSaveRoute(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeToolPanel(); });
 document.querySelectorAll('.joy-btn').forEach(btn => {
   const start = e => { e.preventDefault(); startJoystick(Number(btn.dataset.bearing)); };
   btn.addEventListener('pointerdown', start);
@@ -1094,7 +1078,7 @@ document.querySelectorAll('.joy-btn').forEach(btn => {
 
 renderFavs();
 renderSavedRoutes();
-switchMapProvider('google');
+initMap();
 queryActive();
 <\/script>
 </body>
