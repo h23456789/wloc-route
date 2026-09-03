@@ -4,13 +4,13 @@
 
 # Apple WLOC 定位修改
 
-修改 Apple 网络定位服务 (WiFi/基站) 返回的坐标，实现 iOS 网络定位虚拟定位。打开在线选点页面选位置即可生效，无需手动填经纬度。
+修改 Apple 網路定位服務 (WiFi/基站) 返回的座標，實現 iOS 網路定位虛擬定位。打開線上選點頁面選位置即可生效，無需手動填經緯度。
 
-> ⚠️ **iOS 27 beta 6 起，系统已禁止对 `gs-loc.apple.com` 进行 MITM 拦截。** 目前该版本及之后的 beta 版本暂时无法使用本项目，等待后续适配方案。
+> ⚠️ **iOS 27 beta 6 起，系統已禁止對 `gs-loc.apple.com` 進行 MITM 攔截。** 目前該版本及之後的 beta 版本暫時無法使用本專案，等待後續適配方案。
 
 ---
 
-## 订阅地址
+## 訂閱地址
 
 **Surge:**
 https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.sgmodule
@@ -27,12 +27,12 @@ https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.stove
 **Shadowrocket(小火箭):**
 https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.module
 
-> Egern 可直接使用 Surge 模块
-> Stash 请直接订阅上面的 `.stoverride`，无需用 Script Hub 转换
+> Egern 可直接使用 Surge 模組
+> Stash 請直接訂閱上面的 `.stoverride`，無需用 Script Hub 轉換
 
-### 默认扩展域名支持
+### 默認擴展功能變數名稱支持
 
-默认模块已覆盖目前已知的完整 WLOC 域名集合：
+預設模組已覆蓋目前已知的完整 WLOC 功能變數名稱集合：
 
 - `gsp-ssl.ls.apple.com`
 - `bluedot.is.autonavi.com`
@@ -41,95 +41,95 @@ https://raw.githubusercontent.com/Yu9191/wloc/refs/heads/main/modules/wloc.modul
 
 ---
 
-## 快捷指令（推荐，最方便）
+## 快捷指令（推薦，最方便）
 
-直接用快捷指令切换 / 清除定位，无需打开选点页面：
+直接用快捷指令切換 / 清除定位，無需打開選點頁面：
 
-- **wloc 设置地理位置**：https://www.icloud.com/shortcuts/a82717d8fdad4e6280866fcf911173f7
-- **wloc 清理恢复位置**：https://www.icloud.com/shortcuts/f42632d406504f24a2cd163af4fe012f
+- **wloc 設置地理位置**：https://www.icloud.com/shortcuts/a82717d8fdad4e6280866fcf911173f7
+- **wloc 清理恢復位置**：https://www.icloud.com/shortcuts/f42632d406504f24a2cd163af4fe012f
 
 **用法**
 
-- **设置位置：** 在地图 App 里选好位置（长按地图选点）→ 共享 → 选「wloc 设置地理位置」即可切换。
-  - 苹果地图：选点 → 共享 → 「wloc 设置地理位置」
-  - 高德地图：选点 → 分享 → **更多** → 「wloc 设置地理位置」
-- **清理位置：** 点「wloc 清理恢复位置」即可恢复真实定位。
+- **設置位置：** 在地圖 App 裡選好位置（長按地圖選點）→ 共用 → 選「wloc 設置地理位置」即可切換。
+  - 蘋果地圖：選點 → 共用 → 「wloc 設置地理位置」
+  - 高德地圖：選點 → 分享 → **更多** → 「wloc 設置地理位置」
+- **清理位置：** 點「wloc 清理恢復位置」即可恢復真實定位。
 
-支持苹果地图、高德（含短链，自动跟跳转 + GCJ-02→WGS84 坐标换算）。
+支援蘋果地圖、高德（含短鏈，自動跟跳轉 + GCJ-02→WGS84 座標換算）。
 
-> 前提：代理已开 + 模块已启用 + 信任 `gs-loc.apple.com`。选点页面（Worker / Pages）方案仍保留，见下方。
+> 前提：代理已開 + 模組已啟用 + 信任 `gs-loc.apple.com`。選點頁面（Worker / Pages）方案仍保留，見下方。
 
 ---
 
-### 关于地图链接解析（worker）
+### 關於地圖連結解析（worker）
 
-为了让苹果地图和高德走同一条流程，链接统一发给 `wloc-spoofer.wloc.workers.dev/api/parse` 解析：
+為了讓蘋果地圖和高德走同一條流程，連結統一發給 `wloc-spoofer.wloc.workers.dev/api/parse` 解析：
 
-- **高德**：分享出来是短链，真实坐标只藏在 302 跳转的 `Location` 头里，且是 GCJ-02 偏移坐标。快捷指令既读不到跳转头、也难做坐标换算，所以由 worker 跟跳转 → 抠坐标 → GCJ-02→WGS84 → 返回经纬度。
-- **苹果地图**：链接里直接带 `coordinate=纬度,经度`，但在**中国大陆同样是 GCJ-02 偏移坐标**，所以和高德一样由 worker 做 GCJ-02→WGS84 换算后返回；境外坐标会自动跳过换算（`out_of_china` 判断）原样返回。除了统一坐标系，走同一接口也方便统一处理短链、文本夹链接、名称解码等。
+- **高德**：分享出來是短鏈，真實座標只藏在 302 跳轉的 `Location` 頭裡，且是 GCJ-02 偏移座標。快捷指令既讀不到跳轉頭、也難做座標換算，所以由 worker 跟跳轉 → 摳座標 → GCJ-02→WGS84 → 返回經緯度。
+- **蘋果地圖**：連結裡直接帶 `coordinate=緯度,經度`，但在**中國大陸同樣是 GCJ-02 偏移座標**，所以和高德一樣由 worker 做 GCJ-02→WGS84 換算後返回；境外座標會自動跳過換算（`out_of_china` 判斷）原樣返回。除了統一坐標系，走同一介面也方便統一處理短鏈、文本夾連結、名稱解碼等。
 
-**隐私：** `/api/parse` 是纯转发解析——收到链接 → 跟跳转 → 解析坐标 → 返回 JSON，全程不写任何存储、不记日志、不缓存，处理完即丢（`wrangler.jsonc` 里已显式关闭 observability）。跟跳转时只接受 http/https，单次请求 8 秒超时、只读响应正文前 512 KB。
+**隱私：** `/api/parse` 是純轉發解析——收到連結 → 跟跳轉 → 解析座標 → 返回 JSON，全程不寫任何存儲、不記日誌、不緩存，處理完即丟（`wrangler.jsonc` 裡已顯式關閉 observability）。跟跳轉時只接受 http/https，單次請求 8 秒超時、唯讀回應正文前 512 KB。
 
-**不放心可自行部署：** worker 源码完全开源，可自己部署一份替换上面的地址：
+**不放心可自行部署：** worker 源碼完全開源，可自己部署一份替換上面的地址：
 
 - 路由：[`worker/src/index.js`](worker/src/index.js)
-- 链接解析与坐标换算：[`worker/src/parse.js`](worker/src/parse.js)
-- 选点页面：[`worker/src/page.js`](worker/src/page.js)、[`worker/src/gcj-browser.js`](worker/src/gcj-browser.js)
-- 部署后把快捷指令里的 `wloc-spoofer.wloc.workers.dev` 换成你自己的 worker 域名即可。
+- 連結解析與座標換算：[`worker/src/parse.js`](worker/src/parse.js)
+- 選點頁面：[`worker/src/page.js`](worker/src/page.js)、[`worker/src/gcj-browser.js`](worker/src/gcj-browser.js)
+- 部署後把快捷指令裡的 `wloc-spoofer.wloc.workers.dev` 換成你自己的 worker 功能變數名稱即可。
 
-解析逻辑带一套不联网的回归测试，改动后跑一下：
+解析邏輯帶一套不聯網的回歸測試，改動後跑一下：
 
 ```bash
 cd worker && npm install && npm test
 ```
 
-**坐标系说明：** 页面内部一律以 WGS84 为准。底图切到「高德」时，瓦片画的是 GCJ-02
-地物，与 Leaflet 的 WGS84 像素映射差着一个偏移量（深圳一带约 600 米），页面会在
-选点/落点时自动双向换算，所以在任意底图上点选得到的都是同一个 WGS84 坐标。
+**坐標系說明：** 頁面內部一律以 WGS84 為准。底圖切到「高德」時，瓦片畫的是 GCJ-02
+地物，與 Leaflet 的 WGS84 圖元映射差著一個偏移量（深圳一帶約 600 米），頁面會在
+選點/落點時自動雙向換算，所以在任意底圖上點選得到的都是同一個 WGS84 座標。
 
-各家地图的坐标系不同，换算按「来源 × 地区」分派：
+各家地圖的坐標系不同，換算按「來源 × 地區」分派：
 
-| 来源 | 中国大陆 | 港澳台 |
+| 來源 | 中國大陸 | 港澳臺 |
 |------|----------|--------|
-| 苹果地图 / Google | GCJ-02，需换算 | **WGS84，不换算** |
-| 高德 / 百度 | GCJ-02 / BD-09，需换算 | 同左，仍需换算 |
+| 蘋果地圖 / Google | GCJ-02，需換算 | **WGS84，不換算** |
+| 高德 / 百度 | GCJ-02 / BD-09，需換算 | 同左，仍需換算 |
 
-**港澳台建议优先用苹果或高德的链接。** 百度在港澳台的分享短链，坐标要靠网页脚本
-带反爬令牌去查，服务端取不到；变通办法是在浏览器打开该链接，等地址栏变成
-`map.baidu.com/poi/名称/@数字,数字,19z` 之后复制整条地址再粘贴——但百度的针脚位置
-与苹果/高德常有几十到两百米的出入（大陆约 5 米，港澳台可达 240 米），精确定位时
-不建议用它。
+**港澳臺建議優先用蘋果或高德的連結。** 百度在港澳臺的分享短鏈，座標要靠網頁腳本
+帶反爬權杖去查，服務端取不到；變通辦法是在流覽器打開該連結，等位址欄變成
+`map.baidu.com/poi/名稱/@數位,數位,19z` 之後複製整條地址再粘貼——但百度的針腳位置
+與蘋果/高德常有幾十到兩百米的出入（大陸約 5 米，港澳臺可達 240 米），精確定位時
+不建議用它。
 
 ---
 
 <details>
 <summary><b>使用方法</b></summary>
 
-1. 订阅模块并启用 MITM
-2. 打开在线选点页面（公共 Worker，建议添加到主屏幕）
-3. 地图选位置 / 搜索地名 / 粘贴地图链接
-4. 点击「储存到设备」
-5. 下次 Apple 定位触发时自动生效
+1. 訂閱模組並啟用 MITM
+2. 打開線上選點頁面（公共 Worker，建議添加到主螢幕）
+3. 地圖選位置 / 搜索地名 / 粘貼地圖連結
+4. 點擊「儲存到設備」
+5. 下次 Apple 定位觸發時自動生效
 
-支持 Apple Maps / Google Maps / 高德 / 百度 / 坐标文本 链接解析。
+支援 Apple Maps / Google Maps / 高德 / 百度 / 座標文本 連結解析。
 
-> **iOS 26/27 及更高版本注意：** Apple 从 iOS 26 开始大幅强化了 `locationd` 的定位缓存机制，系统会将之前获取的真实定位结果缓存在内存中并长时间复用。这意味着安装模块或切换目标坐标后，即使脚本已成功修改了 WLOC 响应（日志显示"已修改"），系统仍可能继续使用缓存中的旧坐标，导致定位看起来没有变化。
+> **iOS 26/27 及更高版本注意：** Apple 從 iOS 26 開始大幅強化了 `locationd` 的定位緩存機制，系統會將之前獲取的真實定位結果緩存在記憶體中並長時間複用。這意味著安裝模組或切換目標座標後，即使腳本已成功修改了 WLOC 回應（日誌顯示"已修改"），系統仍可能繼續使用緩存中的舊座標，導致定位看起來沒有變化。
 >
-> **解决方法：重启设备。** 重启会清空 `locationd` 的内存缓存，系统重新发起 WLOC 请求时会拿到修改后的坐标。飞行模式开关、关闭定位服务等方式在 iOS 26+ 上**无法**清除此缓存，必须重启。iOS 15~18 通常不需要重启即可生效。
+> **解決方法：重啟設備。** 重啟會清空 `locationd` 的記憶體緩存，系統重新發起 WLOC 請求時會拿到修改後的座標。飛行模式開關、關閉定位服務等方式在 iOS 26+ 上**無法**清除此緩存，必須重啟。iOS 15~18 通常不需要重啟即可生效。
 
-**高版本系统推荐操作流程（成功率最高）：**
+**高版本系統推薦操作流程（成功率最高）：**
 
 方法一：
-1. 先在选点页面选好需要修改的定位并储存到设备
-2. 开飞行模式 → 关闭定位服务 → 重启设备
-3. 关闭飞行模式（WiFi 也要关）→ 连接代理工具（确认 VPN 图标出现）→ 打开定位服务
-4. 打开地图验证
+1. 先在選點頁面選好需要修改的定位並儲存到設備
+2. 開飛行模式 → 關閉定位服務 → 重啟設備
+3. 關閉飛行模式（WiFi 也要關）→ 連接代理工具（確認 VPN 圖示出現）→ 打開定位服務
+4. 打開地圖驗證
 
 方法二：
-1. 关闭定位服务
-2. 在选点页面选好位置并储存到设备
-3. 打开定位服务 → 弹出「允许访问位置信息」时选择**「下次询问或在我共享时」**
-4. 打开地图验证
+1. 關閉定位服務
+2. 在選點頁面選好位置並儲存到設備
+3. 打開定位服務 → 彈出「允許訪問位置資訊」時選擇**「下次詢問或在我共用時」**
+4. 打開地圖驗證
 
 </details>
 
@@ -137,117 +137,117 @@ cd worker && npm install && npm test
 <summary><b>工作原理</b></summary>
 
 ```
-选点页面 → fetch gs-loc.apple.com/wloc-settings/save?lon=x&lat=y
-         → 代理模块拦截 → wloc-settings.js 写入 $persistentStore
-         → 下次 WLOC 触发 → wloc.js 读取坐标 → patch protobuf 响应
+選點頁面 → fetch gs-loc.apple.com/wloc-settings/save?lon=x&lat=y
+         → 代理模組攔截 → wloc-settings.js 寫入 $persistentStore
+         → 下次 WLOC 觸發 → wloc.js 讀取座標 → patch protobuf 回應
 ```
 
-模块包含两条规则：
-- `wloc.js` — 拦截 `/clls/wloc` 响应，解析 protobuf 并替换坐标
-- `wloc-settings.js` — 拦截 `/wloc-settings/save` 请求，写入持久化存储
+模組包含兩條規則：
+- `wloc.js` — 攔截 `/clls/wloc` 回應，解析 protobuf 並替換座標
+- `wloc-settings.js` — 攔截 `/wloc-settings/save` 請求，寫入持久化存儲
 
 </details>
 
 <details>
-<summary><b>参数配置</b></summary>
+<summary><b>參數配置</b></summary>
 
-| 参数 | 说明 | 默认值 |
+| 參數 | 說明 | 預設值 |
 |------|------|--------|
-| longitude | 目标经度(在线选点优先) | null (透传) |
-| latitude | 目标纬度(在线选点优先) | null (透传) |
+| longitude | 目標經度(線上選點優先) | null (透傳) |
+| latitude | 目標緯度(線上選點優先) | null (透傳) |
 | accuracy | 精度(米) | 25 |
-| randomRadius | 扰动半径(米)，每次定位在目标点周围随机偏移，0=关闭 | 0 |
-| logLevel | 日志级别 | info |
+| randomRadius | 擾動半徑(米)，每次定位在目標點周圍隨機偏移，0=關閉 | 0 |
+| logLevel | 日誌級別 | info |
 
-优先级: 在线选点储存 > 模块参数 > 默认值
+優先順序: 線上選點儲存 > 模組參數 > 預設值
 
-> **扰动半径说明：** 启用后每次定位响应会在目标坐标周围指定米数内随机偏移，避免每次定位结果完全相同。Surge/Loon/Stash/Shadowrocket 可在模块参数中设置；QX 用户可通过选点页面设置。默认 0（关闭），不影响现有用户。
+> **擾動半徑說明：** 啟用後每次定位響應會在目標座標周圍指定米數內隨機偏移，避免每次定位結果完全相同。Surge/Loon/Stash/Shadowrocket 可在模組參數中設置；QX 使用者可通過選點頁面設置。默認 0（關閉），不影響現有用戶。
 
 </details>
 
 <details>
-<summary><b>取消虚拟定位 / 恢复真实定位</b></summary>
+<summary><b>取消虛擬定位 / 恢復真實定位</b></summary>
 
-**方法一：关闭或删除模块**（推荐）
+**方法一：關閉或刪除模組**（推薦）
 
-关闭模块后脚本不再拦截 WLOC 请求，系统自动恢复真实定位。iOS 26+ 需要重启设备清除定位缓存。
+關閉模組後腳本不再攔截 WLOC 請求，系統自動恢復真實定位。iOS 26+ 需要重啟設備清除定位緩存。
 
-**方法二：清除持久化数据（透传模式）**
+**方法二：清除持久化資料（透傳模式）**
 
-清除已保存的坐标后，脚本进入**透传模式**——不修改 WLOC 响应，直接放行原始数据，系统自动恢复真实 GPS 定位。
+清除已保存的座標後，腳本進入**透傳模式**——不修改 WLOC 回應，直接放行原始資料，系統自動恢復真實 GPS 定位。
 
-**透传模式触发条件：** 持久化数据为空（null）且模块参数为默认值（113.94114, 22.544577）时，脚本判定用户未自定义坐标，自动跳过修改。模块默认参数无需更改，仅清除持久化数据即可触发透传。
+**透傳模式觸發條件：** 持久化資料為空（null）且模組參數為預設值（113.94114, 22.544577）時，腳本判定用戶未自訂座標，自動跳過修改。模組預設參數無需更改，僅清除持久化資料即可觸發透傳。
 
-在代理工具中删除持久化数据，字段名为 `wloc_settings`：
+在代理工具中刪除持久化資料，欄位名為 `wloc_settings`：
 
-- **Surge** — 脚本编辑器运行: `$persistentStore.write(null, "wloc_settings")`
-- **Quantumult X** — 运行: `$prefs.removeValueForKey("wloc_settings")`
-- **Loon** — 运行: `$persistentStore.write(null, "wloc_settings")`
+- **Surge** — 腳本編輯器運行: `$persistentStore.write(null, "wloc_settings")`
+- **Quantumult X** — 運行: `$prefs.removeValueForKey("wloc_settings")`
+- **Loon** — 運行: `$persistentStore.write(null, "wloc_settings")`
 
-清除后重启设备即可恢复真实定位。无需关闭模块，脚本会自动检测到无自定义坐标并跳过修改。
+清除後重啟設備即可恢復真實定位。無需關閉模組，腳本會自動檢測到無自訂座標並跳過修改。
 
-> **注意：** 如果用户在模块参数中手动修改了经纬度（非默认 113.94114, 22.544577），即使清除持久化数据，脚本仍会使用模块参数中的坐标进行修改。只有保持默认参数不变时，清除持久化数据才会进入透传模式。
+> **注意：** 如果使用者在模組參數中手動修改了經緯度（非默認 113.94114, 22.544577），即使清除持久化資料，腳本仍會使用模組參數中的座標進行修改。只有保持預設參數不變時，清除持久化資料才會進入透傳模式。
 
 </details>
 
 <details>
 <summary><b>收藏位置功能</b></summary>
 
-在线选点页面支持收藏多个位置，方便来回切换：
+線上選點頁面支援收藏多個位置，方便來回切換：
 
-- **添加收藏**：选好位置后点击「收藏位置」→ 输入备注名称（支持中文/英文/数字，最多 30 字）→ 保存
-- **快速切换**：点击收藏列表中的位置 → 地图自动跳转 → 点「储存到设备」即可切换
-- **当前生效标记**：与设备已保存坐标一致的收藏会显示「✓ 当前生效」
-- **删除管理**：单个删除（×按钮）或清空全部
-- **当前生效坐标**：页面显示设备端持久化数据（wloc_settings），支持刷新查询和清除
+- **添加收藏**：選好位置後點擊「收藏位置」→ 輸入備註名稱（支援中文/英文/數位，最多 30 字）→ 保存
+- **快速切換**：點擊收藏列表中的位置 → 地圖自動跳轉 → 點「儲存到設備」即可切換
+- **當前生效標記**：與設備已保存座標一致的收藏會顯示「✓ 當前生效」
+- **刪除管理**：單個刪除（×按鈕）或清空全部
+- **當前生效座標**：頁面顯示裝置端持久化資料（wloc_settings），支援刷新查詢和清除
 
-**数据存储说明：**
-- **收藏列表** → 保存在浏览器 `localStorage`（仅用于选点页面的 UI 便捷操作）
-- **生效坐标** → 保存在代理工具持久化存储 `$persistentStore`（脚本运行时实际读取的数据）
+**資料存儲說明：**
+- **收藏列表** → 保存在流覽器 `localStorage`（僅用於選點頁面的 UI 便捷操作）
+- **生效座標** → 保存在代理工具持久化存儲 `$persistentStore`（腳本運行時實際讀取的資料）
 
-两者独立存储。收藏列表是浏览器端的辅助数据，清除浏览器缓存或换浏览器后需重新收藏，但不影响已储存到设备的生效坐标。
+兩者獨立存儲。收藏清單是流覽器端的輔助資料，清除流覽器緩存或換流覽器後需重新收藏，但不影響已儲存到設備的生效座標。
 
 </details>
 
 <details>
-<summary><b>自部署 Worker（推荐）</b></summary>
+<summary><b>自部署 Worker（推薦）</b></summary>
 
-公共选点页面有请求上限，建议部署自己的实例：
+公共選點頁面有請求上限，建議部署自己的實例：
 
 - **Workers**: `https://wloc-spoofer.wloc.workers.dev/`
 - **Pages**: `https://wloc-pages.pages.dev/`
 
-**一键部署（Workers）：**
+**一鍵部署（Workers）：**
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Yu9191/wloc/tree/main/worker)
 
-> 一键部署仅支持 Workers 模式，点击按钮后按提示授权即可完成部署。
+> 一鍵部署僅支援 Workers 模式，點擊按鈕後按提示授權即可完成部署。
 
-**手动部署（Workers）：**
+**手動部署（Workers）：**
 
 ```bash
-# 1. 克隆仓库
+# 1. 克隆倉庫
 git clone https://github.com/Yu9191/wloc.git
 cd wloc/worker
 
-# 2. 安装依赖
+# 2. 安裝依賴
 npm install
 
-# 3. 登录 Cloudflare（首次需要）
+# 3. 登錄 Cloudflare（首次需要）
 npx wrangler login
 
 # 4. 部署
 npm run deploy
 ```
 
-部署成功后会得到你自己的 Worker 地址（如 `https://wloc-spoofer.<你的子域名>.workers.dev`），用这个地址选点即可。
+部署成功後會得到你自己的 Worker 地址（如 `https://wloc-spoofer.<你的子功能變數名稱>.workers.dev`），用這個位址選點即可。
 
-> 免费账户每天 10 万次请求，个人使用完全够用。
+> 免費帳戶每天 10 萬次請求，個人使用完全夠用。
 
 <details>
-<summary>高级：Pages 部署</summary>
+<summary>高級：Pages 部署</summary>
 
-Pages 部署不支持一键按钮，需要手动执行：
+Pages 部署不支援一鍵按鈕，需要手動執行：
 
 ```bash
 git clone https://github.com/Yu9191/wloc.git
@@ -256,45 +256,45 @@ npm install
 npm run pages:deploy
 ```
 
-> 必须走 `npm run pages:deploy`（它带 `-c wrangler.pages.jsonc`）。直接跑
-> `wrangler pages deploy dist` 会丢掉配置里的 compatibility 设定。
+> 必須走 `npm run pages:deploy`（它帶 `-c wrangler.pages.jsonc`）。直接跑
+> `wrangler pages deploy dist` 會丟掉配置裡的 compatibility 設定。
 
-部署时会提示设置 production branch，输入 `main` 即可。部署成功后得到 `https://<项目名>.pages.dev` 地址。
+部署時會提示設置 production branch，輸入 `main` 即可。部署成功後得到 `https://<項目名>.pages.dev` 地址。
 
-Pages 和 Workers 功能完全一致，按需选择即可。
+Pages 和 Workers 功能完全一致，按需選擇即可。
 
 </details>
 
 </details>
 
 <details>
-<summary><b>注意事项</b></summary>
+<summary><b>注意事項</b></summary>
 
-- 需要 MITM 证书信任 `gs-loc.apple.com` 和 `gs-loc-cn.apple.com`
-- 仅修改网络定位(WiFi/基站)，不影响 GPS 硬件定位
-- iOS 在 GPS 信号强时可能忽略网络定位结果
-- 适用于 WiFi 定位为主的室内场景效果最佳
-- 选点页面需在代理模式下使用（Safari 走代理才能拦截储存请求）
+- 需要 MITM 證書信任 `gs-loc.apple.com` 和 `gs-loc-cn.apple.com`
+- 僅修改網路定位(WiFi/基站)，不影響 GPS 硬體定位
+- iOS 在 GPS 信號強時可能忽略網路定位結果
+- 適用於 WiFi 定位為主的室內場景效果最佳
+- 選點頁面需在代理模式下使用（Safari 走代理才能攔截儲存請求）
 
 </details>
 
 ---
 
-## 致谢
+## 致謝
 
 - [proxypin-wloc-spoofer](https://github.com/FFF686868/proxypin-wloc-spoofer) - 原始 WLOC 定位修改思路 by FFF686868
-- [NSNanoCat/Util](https://github.com/NSNanoCat/util) - 跨平台脚本工具框架
+- [NSNanoCat/Util](https://github.com/NSNanoCat/util) - 跨平臺腳本工具框架
 
-### 贡献者
+### 貢獻者
 
-- [@YmlyZA](https://github.com/YmlyZA) - 百度地图支持、港澳台边界处理、GCJ 换算优化、回归测试覆盖 ([#83](https://github.com/Yu9191/wloc/pull/83))
-- [@YeTianXingShi](https://github.com/YeTianXingShi) - randomRadius 随机坐标扰动功能原始实现 ([#70](https://github.com/Yu9191/wloc/pull/70))
-- [@SajoLuo](https://github.com/SajoLuo) - Stash 响应格式修复 ([#66](https://github.com/Yu9191/wloc/pull/66))
-- [@SkywardLab](https://github.com/SkywardLab) - 扩展 WLOC 备用域名拦截 ([#90](https://github.com/Yu9191/wloc/pull/90))
-- [@beiming0000](https://github.com/beiming0000) - 逗号小数格式坐标丢失问题报告 ([#96](https://github.com/Yu9191/wloc/issues/96))
+- [@YmlyZA](https://github.com/YmlyZA) - 百度地圖支援、港澳臺邊界處理、GCJ 換算優化、回歸測試覆蓋 ([#83](https://github.com/Yu9191/wloc/pull/83))
+- [@YeTianXingShi](https://github.com/YeTianXingShi) - randomRadius 隨機座標擾動功能原始實現 ([#70](https://github.com/Yu9191/wloc/pull/70))
+- [@SajoLuo](https://github.com/SajoLuo) - Stash 回應格式修復 ([#66](https://github.com/Yu9191/wloc/pull/66))
+- [@SkywardLab](https://github.com/SkywardLab) - 擴展 WLOC 備用功能變數名稱攔截 ([#90](https://github.com/Yu9191/wloc/pull/90))
+- [@beiming0000](https://github.com/beiming0000) - 逗號小數格式座標丟失問題報告 ([#96](https://github.com/Yu9191/wloc/issues/96))
 
 ---
 
-## 许可证
+## 許可證
 
-本项目采用 [AGPL-3.0](LICENSE) 许可证。未经授权，禁止将本项目代码用于商业产品或上架应用商店。
+本項目採用 [AGPL-3.0](LICENSE) 許可證。未經授權，禁止將本專案代碼用於商業產品或上架應用商店。
