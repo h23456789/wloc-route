@@ -1,27 +1,44 @@
-import { GCJ_BROWSER_JS } from "./gcj-browser.js";
-
-export function getPageHtml() {
+export function getPageHtml({ googleMapsApiKey = "", appleMapKitToken = "" } = {}) {
+  // 官方地圖 SDK 必須在瀏覽器取得憑證；這只避免把設定值提交至 GitHub。
+  const mapConfig = JSON.stringify({ googleMapsApiKey, appleMapKitToken }).replace(/</g, "\\u003c");
   return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>WLOC 虚拟定位</title>
+<title>WLOC 虛擬定位</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="WLOC">
-<!-- 内联图标: 没有它浏览器每次加载都会去要 /favicon.ico 并拿到 404 -->
+<!-- 內聯圖示: 沒有它瀏覽器每次載入都會去要 /favicon.ico 並拿到 404 -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%93%8D%3C/text%3E%3C/svg%3E">
-<!-- integrity 为 Leaflet 官方在 leafletjs.com/download.html 公布的 SRI 值,
-     可自行核对。CDN 被篡改时浏览器会拒绝执行, 下面的 typeof L 检查会给出提示。 -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"><\/script>
 <style>
 :root { --blue:#007aff; --green:#34c759; --red:#ff3b30; --gray:#8e8e93; --bg:#f2f2f7; --orange:#ff9500; }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif; background:var(--bg); }
-#map { height:50vh; width:100%; min-height:250px; }
+#map { height:70vh; width:100%; min-height:420px; }
+.map-shell { position:relative; background:#dce7ee; }
+.map-topbar { position:absolute; z-index:1200; top:max(10px,env(safe-area-inset-top)); left:10px; right:10px; display:flex; gap:7px; align-items:center; pointer-events:none; }
+.map-topbar > * { pointer-events:auto; }
+.map-search { flex:1; display:flex; min-width:0; background:rgba(255,255,255,.96); border-radius:12px; box-shadow:0 3px 14px rgba(0,0,0,.2); overflow:hidden; }
+.map-search input { min-width:0; flex:1; border:0; padding:12px; font-size:16px; outline:0; background:transparent; }
+.map-search button { border:0; color:#fff; background:var(--blue); padding:0 15px; font-size:14px; font-weight:700; }
+.float-tools { position:absolute; z-index:1150; display:flex; flex-direction:column; gap:7px; }
+.float-tools.left { top:72px; left:10px; }
+.float-tools.right { top:72px; right:10px; }
+.float-btn { width:48px; min-height:48px; border:0; border-radius:11px; background:rgba(255,255,255,.96); color:#31343a; box-shadow:0 2px 10px rgba(0,0,0,.2); font-size:20px; font-weight:700; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; touch-action:manipulation; }
+.float-btn small { font-size:10px; line-height:1.1; margin-top:2px; }
+.float-btn.active { background:var(--blue); color:#fff; }
+.float-btn.danger.active { background:var(--green); }
+.provider-menu { position:absolute; z-index:1200; right:65px; top:72px; display:flex; gap:5px; padding:4px; border-radius:10px; background:rgba(255,255,255,.95); box-shadow:0 2px 10px rgba(0,0,0,.18); }
+.joystick-panel { position:absolute; z-index:1200; left:50%; bottom:18px; transform:translateX(-50%); display:none; align-items:center; gap:12px; }
+.joystick-panel.show { display:flex; }
+.joystick { position:relative; width:164px; height:164px; border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 4px 18px rgba(0,0,0,.25); touch-action:none; }
+.joy-btn { position:absolute; width:52px; height:52px; border:0; border-radius:50%; background:#5d91ee; color:#fff; font-size:24px; font-weight:800; box-shadow:0 2px 5px rgba(0,0,0,.2); user-select:none; -webkit-user-select:none; touch-action:none; }
+.joy-btn:active { background:#2568d7; transform:scale(.94); }
+.joy-n { top:7px; left:56px; }.joy-e { right:7px; top:56px; }.joy-s { bottom:7px; left:56px; }.joy-w { left:7px; top:56px; }
+.joy-center { position:absolute; left:58px; top:58px; width:48px; height:48px; border-radius:50%; background:#fff; border:3px solid #5d91ee; display:flex; align-items:center; justify-content:center; color:#5d91ee; font-size:18px; }
+.joy-status { background:rgba(25,25,28,.82); color:#fff; border-radius:12px; padding:9px 11px; font-size:12px; line-height:1.4; min-width:112px; text-align:center; }
+.joy-status input { width:62px; margin:5px 2px; padding:5px; border:0; border-radius:6px; font-size:14px; text-align:center; }
 .panel { padding:16px; max-width:600px; margin:0 auto; }
 .card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
 .card h3 { font-size:15px; font-weight:600; margin-bottom:10px; }
@@ -71,7 +88,7 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .layer-btn { border:none; background:transparent; padding:6px 10px; border-radius:6px; font-size:12px; font-weight:500; color:#333; cursor:pointer; transition:all .15s; white-space:nowrap; }
 .layer-btn.active { background:var(--blue); color:#fff; }
 .layer-btn:active { transform:scale(.95); }
-.mode-tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:4px; background:var(--bg); border-radius:10px; margin-bottom:12px; }
+.mode-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:4px; background:var(--bg); border-radius:10px; margin-bottom:12px; }
 .mode-tab { border:0; background:transparent; border-radius:8px; padding:9px 8px; color:#666; font-size:14px; font-weight:600; cursor:pointer; }
 .mode-tab.active { background:#fff; color:var(--blue); box-shadow:0 1px 4px rgba(0,0,0,.12); }
 .route-panel { display:none; }
@@ -106,31 +123,53 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .saved-route-main { flex:1; min-width:0; cursor:pointer; }
 .saved-route-name { font-size:14px; font-weight:600; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .saved-route-meta { font-size:11px; color:var(--gray); margin-top:2px; }
-@media(max-width:480px) { #map { height:44vh; } .panel { padding:12px; } .layer-btn { padding:5px 7px; font-size:11px; } }
+@media(max-width:480px) { #map { height:72vh; min-height:480px; } .panel { padding:12px; } .layer-btn { padding:6px 8px; font-size:11px; } .float-btn { width:44px; min-height:44px; } .joystick { width:148px; height:148px; } .joy-btn { width:48px; height:48px; } .joy-n { top:5px; left:50px; }.joy-e { right:5px; top:50px; }.joy-s { bottom:5px; left:50px; }.joy-w { left:5px; top:50px; }.joy-center { left:52px; top:52px; width:44px; height:44px; } }
 </style>
 </head>
 <body>
-<div style="position:relative">
+<div class="map-shell">
 <div id="map"></div>
-<div class="layer-switch">
-  <button class="layer-btn active" data-layer="satellite" onclick="switchLayer('satellite')">卫星</button>
-  <button class="layer-btn" data-layer="wgs84" onclick="switchLayer('wgs84')">WGS84</button>
-  <button class="layer-btn" data-layer="amap" onclick="switchLayer('amap')" title="高德为 GCJ-02 偏移图源，选点已自动换算回 WGS84">高德</button>
-  <button class="layer-btn" data-layer="voyager" onclick="switchLayer('voyager')">彩色</button>
-  <button class="layer-btn" data-layer="standard" onclick="switchLayer('standard')">标准</button>
-  <button class="layer-btn" data-layer="dark" onclick="switchLayer('dark')">暗色</button>
+<div class="map-topbar">
+  <button class="float-btn" onclick="scrollToControls()" aria-label="開啟控制面板">☰</button>
+  <div class="map-search"><input id="floatingInput" placeholder="輸入座標或貼上 Apple／Google 地圖連結" /><button onclick="parseFloatingInput()">前往</button></div>
+</div>
+<div class="float-tools left" aria-label="定位工具">
+  <button class="float-btn active" id="floatPointBtn" onclick="setMode('point')" aria-label="單點定位">⌖<small>單點</small></button>
+  <button class="float-btn" id="floatRouteBtn" onclick="setMode('route')" aria-label="手繪路線">⌁<small>路線</small></button>
+  <button class="float-btn" id="floatJoystickBtn" onclick="setMode('joystick')" aria-label="搖桿模式">✥<small>搖桿</small></button>
+  <button class="float-btn" onclick="document.getElementById('gpxInput').click()" aria-label="匯入 GPX">GPX</button>
+  <button class="float-btn" onclick="scrollToSaved()" aria-label="已儲存項目">▣<small>儲存</small></button>
+</div>
+<div class="float-tools right" aria-label="地圖工具">
+  <button class="float-btn" onclick="locateMe()" aria-label="目前位置">◎<small>定位</small></button>
+  <button class="float-btn danger active" id="northLockBtn" onclick="toggleNorthLock()" aria-pressed="true" aria-label="固定向北">N<small>已鎖北</small></button>
+  <button class="float-btn" onclick="toggleProviderMenu()" aria-label="切換地圖">▱<small>地圖</small></button>
+</div>
+<div class="provider-menu" id="providerMenu" hidden>
+  <button class="layer-btn active" data-layer="google" onclick="switchMapProvider('google')">Google 地圖</button>
+  <button class="layer-btn" data-layer="apple" onclick="switchMapProvider('apple')">Apple 地圖</button>
+</div>
+<div class="joystick-panel" id="joystickPanel">
+  <div class="joystick" aria-label="方向搖桿">
+    <button class="joy-btn joy-n" data-bearing="0" aria-label="向北移動">↑</button>
+    <button class="joy-btn joy-e" data-bearing="90" aria-label="向東移動">→</button>
+    <button class="joy-btn joy-s" data-bearing="180" aria-label="向南移動">↓</button>
+    <button class="joy-btn joy-w" data-bearing="270" aria-label="向西移動">←</button>
+    <div class="joy-center">●</div>
+  </div>
+  <div class="joy-status"><b>移動速度</b><br><input id="joySpeedInput" type="number" min="0.5" max="300" step="0.5" value="4.5"> km/h<br><span id="joyState">按住方向移動</span></div>
 </div>
 </div>
 <div class="panel">
   <div class="error-banner" id="errorBanner">
-    <b>模块未生效</b>
-    请检查以下配置：<br>
-    1. 已安装并启用 WLOC 定位模块<br>
-    2. MITM 已开启且信任证书<br>
-    3. MITM 主机名包含 gs-loc.apple.com<br>
-    4. 当前网络已走代理
+    <b>模組未生效</b>
+    請檢查以下配置：<br>
+    1. 已安裝並啟用 WLOC 定位模組<br>
+    2. MITM 已開啟且信任證書<br>
+    3. MITM 主機名包含 gs-loc.apple.com<br>
+    4. 當前網路已走代理
   </div>
-  <div class="card">
+  <div class="card" id="controlPanel">
     <div class="master-switch">
       <div><strong>WLOC 虛擬定位</strong><small id="wlocSwitchText">查詢目前狀態...</small></div>
       <label class="switch" aria-label="WLOC 虛擬定位開關"><input id="wlocSwitch" type="checkbox" onchange="toggleWloc(this.checked)" /><span></span></label>
@@ -138,6 +177,7 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
     <div class="mode-tabs" role="tablist" aria-label="定位模式">
       <button class="mode-tab active" id="pointTab" onclick="setMode('point')">單點定位</button>
       <button class="mode-tab" id="routeTab" onclick="setMode('route')">路線移動</button>
+      <button class="mode-tab" id="joystickTab" onclick="setMode('joystick')">搖桿移動</button>
     </div>
     <div id="routePanel" class="route-panel">
       <h3>建立移動路線</h3>
@@ -156,7 +196,7 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
       </div>
       <div class="route-options">
         <label>速度 <input id="speedInput" type="number" min="0.5" max="300" step="0.5" value="4.5" /> km/h</label>
-        <label><input id="loopInput" type="checkbox" /> 完成後循環</label>
+        <label><input id="loopInput" type="checkbox" /> 完成後迴圈</label>
       </div>
       <div class="route-progress"><div id="routeProgressBar"></div></div>
       <div class="route-hint" id="routeHint">在地圖依序點選至少兩個位置，或匯入 GPX。GPX 只在本機解析；開始後路線會寫入代理工具。</div>
@@ -169,19 +209,19 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
       <div id="savedRouteList" class="saved-route-list"></div>
     </div>
   </div>
-  <div class="card">
-    <h3>选择目标位置</h3>
-    <div class="coords" id="coords">点击地图或使用下方工具选择位置</div>
+  <div class="card" id="savedItemsPanel">
+    <h3>選擇目標位置</h3>
+    <div class="coords" id="coords">點選地圖或使用下方工具選擇位置</div>
     <div class="input-row" style="margin-top:10px">
-      <label style="font-size:13px;color:var(--gray);display:flex;align-items:center;gap:6px;white-space:nowrap">扰动半径(米)
+      <label style="font-size:13px;color:var(--gray);display:flex;align-items:center;gap:6px;white-space:nowrap">擾動半徑(米)
         <input id="radiusInput" type="number" min="0" max="5000" step="1" value="0" style="width:80px;flex:none" />
       </label>
-      <span style="font-size:11px;color:var(--gray);line-height:1.3">每次定位在目标点周围随机偏移，0=关闭</span>
+      <span style="font-size:11px;color:var(--gray);line-height:1.3">每次定位在目標點周圍隨機偏移，0=關閉</span>
     </div>
     <div class="row">
-      <button class="btn btn-primary" id="saveBtn" onclick="save()">储存到设备</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="save()">儲存到裝置</button>
       <button class="btn btn-secondary" onclick="addFav()">收藏位置</button>
-      <button class="btn btn-secondary" onclick="locateMe()">当前位置</button>
+      <button class="btn btn-secondary" onclick="locateMe()">當前位置</button>
     </div>
   </div>
   <div class="card">
@@ -192,42 +232,42 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
     <div id="favList" class="fav-list"></div>
   </div>
   <div class="card">
-    <h3>当前生效坐标</h3>
+    <h3>當前生效座標</h3>
     <div class="active-loc" id="activeLoc">
-      <div class="label">设备持久化数据 (wloc_settings)</div>
-      <div class="value" id="activeValue">查询中...</div>
+      <div class="label">裝置持久化資料 (wloc_settings)</div>
+      <div class="value" id="activeValue">查詢中...</div>
     </div>
     <div class="row">
-      <button class="btn btn-sm btn-secondary" onclick="queryActive()">刷新</button>
-      <button class="btn btn-sm btn-danger" onclick="clearActive()">清除数据</button>
+      <button class="btn btn-sm btn-secondary" onclick="queryActive()">重新整理</button>
+      <button class="btn btn-sm btn-danger" onclick="clearActive()">清除資料</button>
     </div>
   </div>
   <div class="card">
-    <h3>粘贴地图链接</h3>
+    <h3>貼上地圖連結</h3>
     <div class="input-row">
-      <input id="urlInput" placeholder="Apple/Google/高德地图链接 或 经纬度" />
+      <input id="urlInput" placeholder="Apple / Google 地圖連結或經緯度" />
       <button class="btn btn-secondary" style="flex:none;min-width:56px" onclick="parseUrl()">解析</button>
     </div>
-    <div style="font-size:11px;color:var(--gray);margin-top:6px">支持 Apple Maps · Google Maps · 高德 · 百度 · 坐标文本</div>
+    <div style="font-size:11px;color:var(--gray);margin-top:6px">只支援 Apple Maps、Google Maps 與座標文字</div>
   </div>
   <div class="card">
-    <h3>搜索地点</h3>
+    <h3>搜尋地點</h3>
     <div class="input-row">
-      <input id="searchInput" placeholder="输入地名（如: 上海外滩）" />
-      <button class="btn btn-secondary" style="flex:none;min-width:56px" onclick="searchPlace()">搜索</button>
+      <input id="searchInput" placeholder="輸入地名（如: 上海外灘）" />
+      <button class="btn btn-secondary" style="flex:none;min-width:56px" onclick="searchPlace()">搜尋</button>
     </div>
   </div>
-  <div class="status" id="status">选好位置后点击「储存到设备」写入代理工具</div>
+  <div class="status" id="status">選好位置後點選「儲存到裝置」寫入代理工具</div>
 </div>
 <div class="toast" id="toast"></div>
 <div class="modal-overlay" id="favModal">
   <div class="modal">
     <h3>收藏此位置</h3>
-    <input id="favNameInput" placeholder="输入备注名称（如: 公司、家）" maxlength="30" />
+    <input id="favNameInput" placeholder="輸入備註名稱（如: 公司、家）" maxlength="30" />
     <div style="font-size:12px;color:var(--gray);margin-bottom:12px;text-align:center" id="favModalCoords"></div>
     <div class="modal-btns">
       <button class="btn btn-secondary" onclick="closeFavModal()">取消</button>
-      <button class="btn btn-primary" onclick="confirmFav()">保存</button>
+      <button class="btn btn-primary" onclick="confirmFav()">儲存</button>
     </div>
   </div>
 </div>
@@ -243,96 +283,134 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
   </div>
 </div>
 <script>
-if (typeof L === 'undefined') {
-  document.getElementById('map').innerHTML =
-    '<div style="padding:24px;text-align:center;font-size:14px;color:#8e8e93;line-height:1.6">' +
-    '地图库加载失败<br>unpkg.com 不可达, 请检查网络或代理后刷新<\\/div>';
-  throw new Error('leaflet unavailable');
-}
-${GCJ_BROWSER_JS}
+const MAP_CONFIG = ${mapConfig};
 const SAVE_API = 'https://gs-loc.apple.com/wloc-settings/save';
 const FAV_KEY = 'wloc_favorites';
 const ROUTE_KEY = 'wloc_saved_routes';
-// lat/lon 恒为 WGS84 —— 这是写进设备、也是 wloc 唯一认的坐标系。
-// 底图可能是 GCJ-02 图源, 屏幕上的经纬度与它并不相等, 换算集中在 toDisplay/
-// fromDisplay 两个函数里, 其它地方一律不碰。
+// lat/lon 恆為 WGS84 —— 這是寫進裝置、也是 WLOC 唯一認的座標系。
 let lat = 22.544577, lon = 113.94114;
 let selected = false;
 let activeLon = null, activeLat = null;
-let layerIsGcj = false;
 let mode = 'point';
 let routePoints = [];
-let routeLine = null;
-let routeMarkers = [];
 let activeRoute = null;
 let routeTimer = null;
 let routeSuggestedName = '';
 let routeSource = 'manual';
 let wlocEnabled = false;
+let mapProvider = 'google';
+let northLocked = true;
+let joystickTimer = null;
+let joystickSaving = false;
+let joystickLastSave = 0;
+let googleMap, googleMarker, googleRouteLine, googleRouteMarkers = [];
+let appleMap, appleMarker, appleRouteItems = [];
 
-// 高德瓦片画的是 GCJ-02 地物, 而 Leaflet 按 WGS84 算「像素 -> 经纬度」。所以在
-// 高德图层上点中的那个读数, 其实是目标点的 GCJ-02 值; 不反算就直接存, 深圳一带
-// 会偏 500 米左右 —— 对一个定位工具来说这是致命的。反过来, 要把一个 WGS84 点
-// 画在高德图层上, 得先正算成 GCJ-02, 否则 marker 会落在错误的楼上。
-function toDisplay(la, lo) { return layerIsGcj ? wgs84ToGcj02(la, lo) : { lat: la, lon: lo }; }
-function fromDisplay(la, lo) { return layerIsGcj ? gcj02ToWgs84(la, lo) : { lat: la, lon: lo }; }
-
-const map = L.map('map').setView([lat, lon], 13);
-const tiles = {
-  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS'}),
-  wgs84: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS WGS84'}),
-  standard: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'\\u00a9 OSM'}),
-  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19, attribution:'\\u00a9 Carto'}),
-  amap: L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}', {maxZoom:18, subdomains:'1234', attribution:'\\u00a9 高德'}),
-  voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {maxZoom:19, attribution:'\\u00a9 Carto'})
-};
-let currentLayer = tiles.satellite;
-currentLayer.addTo(map);
-function switchLayer(name) {
-  map.removeLayer(currentLayer);
-  currentLayer = tiles[name];
-  currentLayer.addTo(map);
-  layerIsGcj = (name === 'amap');
-  // 底图坐标系变了, 同一个 WGS84 点对应的屏幕位置也就变了, marker 必须重摆,
-  // 否则切换图层后它会停在旧图源的像素位置上, 看起来像是坐标被改掉了。
-  const d = toDisplay(lat, lon);
-  marker.setLatLng([d.lat, d.lon]);
-  renderRoute();
-  map.setView([d.lat, d.lon], map.getZoom());
-  document.querySelectorAll('.layer-btn').forEach(b => b.classList.toggle('active', b.dataset.layer === name));
+function mapError(message) {
+  document.getElementById('map').innerHTML = '<div style="padding:24px;text-align:center;font-size:14px;color:#8e8e93;line-height:1.6">' + message + '<\\/div>';
 }
-let marker = L.marker([lat, lon], {draggable:true}).addTo(map);
-
-// 地图交互给出的都是「屏幕坐标系」的读数, 一律先过 fromDisplay 再进 setPos。
-marker.on('dragend', e => { const p=e.target.getLatLng(); setPosFromDisplay(p.lat, p.lng); });
-map.on('click', e => {
-  if (mode === 'route') {
-    const w = fromDisplay(e.latlng.lat, e.latlng.lng);
-    routePoints.push([w.lat, w.lon]);
-    routeSource = 'manual';
-    renderRoute();
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script'); s.src = src; s.async = true;
+    s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+  });
+}
+function handleMapPick(la, lo) {
+  if (mode === 'route') { routePoints.push([la, lo]); routeSource = 'manual'; renderRoute(); return; }
+  setPos(la, lo);
+}
+async function initGoogleMap() {
+  if (!MAP_CONFIG.googleMapsApiKey) return mapError('尚未設定 Google 地圖金鑰。請在 Cloudflare 新增 GOOGLE_MAPS_API_KEY。');
+  if (!window.google || !google.maps) await loadScript('https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(MAP_CONFIG.googleMapsApiKey) + '&v=weekly');
+  googleMap = new google.maps.Map(document.getElementById('map'), {center:{lat, lng:lon}, zoom:13, mapTypeId:'roadmap', gestureHandling:'greedy', heading:0, tilt:0, headingInteractionEnabled:!northLocked});
+  googleMap.addListener('click', e => handleMapPick(e.latLng.lat(), e.latLng.lng()));
+  googleMap.addListener('heading_changed', () => { if (northLocked && googleMap.getHeading()) googleMap.setHeading(0); });
+  renderMapObjects();
+}
+async function initAppleMap() {
+  if (!MAP_CONFIG.appleMapKitToken) return mapError('尚未設定 Apple 地圖權杖。請在 Cloudflare 新增 APPLE_MAPKIT_TOKEN。');
+  if (!window.mapkit) await loadScript('https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.core.js');
+  mapkit.init({authorizationCallback: done => done(MAP_CONFIG.appleMapKitToken), language:'zh-Hant'});
+  appleMap = new mapkit.Map('map');
+  appleMap.rotationEnabled = !northLocked;
+  if (northLocked) appleMap.rotation = 0;
+  appleMap.region = new mapkit.CoordinateRegion(new mapkit.Coordinate(lat, lon), new mapkit.CoordinateSpan(0.08, 0.08));
+  appleMap.addEventListener('click', e => { if (e.coordinate) handleMapPick(e.coordinate.latitude, e.coordinate.longitude); });
+  renderMapObjects();
+}
+async function switchMapProvider(provider) {
+  mapProvider = provider;
+  googleMap = undefined; googleMarker = undefined; googleRouteLine = undefined; googleRouteMarkers = [];
+  appleMap = undefined; appleMarker = undefined; appleRouteItems = [];
+  document.getElementById('map').innerHTML = '';
+  document.querySelectorAll('.layer-btn').forEach(b => b.classList.toggle('active', b.dataset.layer === provider));
+  try { if (provider === 'apple') await initAppleMap(); else await initGoogleMap(); }
+  catch (e) { mapError(provider === 'apple' ? 'Apple 地圖載入失敗，請檢查 MapKit JS 權杖與網域設定。' : 'Google 地圖載入失敗，請檢查 API 金鑰與網域限制。'); }
+  document.getElementById('providerMenu').hidden = true;
+}
+function renderMapObjects() {
+  if (googleMap) {
+    if (googleMarker) googleMarker.setMap(null);
+    googleRouteMarkers.forEach(m => m.setMap(null)); googleRouteMarkers = [];
+    if (googleRouteLine) googleRouteLine.setMap(null);
+    if (mode === 'point') googleMarker = new google.maps.Marker({position:{lat,lng:lon}, map:googleMap, draggable:true});
+    if (googleMarker) googleMarker.addListener('dragend', e => setPos(e.latLng.lat(), e.latLng.lng()));
+    if (routePoints.length > 1) googleRouteLine = new google.maps.Polyline({path:routePoints.map(p => ({lat:p[0],lng:p[1]})),strokeColor:'#007aff',strokeOpacity:.9,strokeWeight:5,map:googleMap});
+    if (routePoints.length <= 40) routePoints.forEach((p, i) => { const m = new google.maps.Marker({position:{lat:p[0],lng:p[1]},map:googleMap,draggable:true,label:String(i+1)}); m.addListener('dragend', e => { routePoints[i]=[e.latLng.lat(),e.latLng.lng()]; renderRoute(); }); googleRouteMarkers.push(m); });
     return;
   }
-  setPosFromDisplay(e.latlng.lat, e.latlng.lng);
-});
-
-function setPosFromDisplay(dLat, dLon) {
-  const w = fromDisplay(dLat, dLon);
-  setPos(w.lat, w.lon);
+  if (appleMap) {
+    appleMap.removeAnnotations(appleMap.annotations || []); appleMap.removeOverlays(appleMap.overlays || []);
+    if (mode === 'point') appleMap.addAnnotation(new mapkit.MarkerAnnotation(new mapkit.Coordinate(lat, lon), {title:'目標位置'}));
+    if (routePoints.length > 1) appleMap.addOverlay(new mapkit.PolylineOverlay(routePoints.map(p => new mapkit.Coordinate(p[0],p[1])), {style:new mapkit.Style({strokeColor:'#007aff',lineWidth:5})}));
+    if (routePoints.length <= 40) routePoints.forEach((p,i) => appleMap.addAnnotation(new mapkit.MarkerAnnotation(new mapkit.Coordinate(p[0],p[1]), {title:'路線點 '+(i+1)})));
+  }
+}
+function moveMapTo(la, lo, zoom) {
+  if (googleMap) googleMap.setCenter({lat:la,lng:lo}), googleMap.setZoom(zoom || 15);
+  if (appleMap) appleMap.region = new mapkit.CoordinateRegion(new mapkit.Coordinate(la,lo), new mapkit.CoordinateSpan(.015,.015));
+}
+function fitRoute() {
+  if (routePoints.length < 2) return;
+  if (googleMap) { const b = new google.maps.LatLngBounds(); routePoints.forEach(p => b.extend({lat:p[0],lng:p[1]})); googleMap.fitBounds(b, 24); }
+  if (appleMap) { const lats=routePoints.map(p=>p[0]), lons=routePoints.map(p=>p[1]); appleMap.region = new mapkit.CoordinateRegion(new mapkit.Coordinate((Math.min(...lats)+Math.max(...lats))/2,(Math.min(...lons)+Math.max(...lons))/2),new mapkit.CoordinateSpan(Math.max(.005,Math.max(...lats)-Math.min(...lats))*1.3,Math.max(.005,Math.max(...lons)-Math.min(...lons))*1.3)); }
+}
+function toggleProviderMenu() {
+  const menu = document.getElementById('providerMenu');
+  menu.hidden = !menu.hidden;
+}
+function toggleNorthLock() {
+  northLocked = !northLocked;
+  const btn = document.getElementById('northLockBtn');
+  btn.classList.toggle('active', northLocked);
+  btn.setAttribute('aria-pressed', String(northLocked));
+  btn.querySelector('small').textContent = northLocked ? '已鎖北' : '可旋轉';
+  if (googleMap) {
+    googleMap.setOptions({headingInteractionEnabled:!northLocked});
+    if (northLocked) { googleMap.setHeading(0); googleMap.setTilt(0); }
+  }
+  if (appleMap) { appleMap.rotationEnabled = !northLocked; if (northLocked) appleMap.rotation = 0; }
+  toast(northLocked ? '地圖已固定向北' : '已允許旋轉地圖');
+}
+function scrollToControls() { document.getElementById('controlPanel').scrollIntoView({behavior:'smooth',block:'start'}); }
+function scrollToSaved() { document.getElementById('savedItemsPanel').scrollIntoView({behavior:'smooth',block:'start'}); }
+function parseFloatingInput() {
+  const value = document.getElementById('floatingInput').value.trim();
+  if (!value) return toast('請輸入座標或貼上地圖連結');
+  document.getElementById('urlInput').value = value;
+  parseUrl();
 }
 
-// 参数恒为 WGS84。
+// 引數恆為 WGS84。
 function setPos(newLat, newLon) {
   lat = newLat; lon = newLon; selected = true;
-  const d = toDisplay(lat, lon);
-  marker.setLatLng([d.lat, d.lon]);
-  document.getElementById('coords').textContent = '经度 ' + lon.toFixed(6) + '  纬度 ' + lat.toFixed(6);
+  renderMapObjects();
+  document.getElementById('coords').textContent = '經度 ' + lon.toFixed(6) + '  緯度 ' + lat.toFixed(6);
 }
 
 function moveTo(newLat, newLon, zoom) {
   setPos(newLat, newLon);
-  const d = toDisplay(lat, lon);
-  map.setView([d.lat, d.lon], zoom || 15);
+  moveMapTo(lat, lon, zoom);
 }
 
 function toast(msg, ms) {
@@ -347,12 +425,61 @@ function showError(show) {
 
 /* ---- Route controller (all route files are parsed locally) ---- */
 function setMode(nextMode) {
-  mode = nextMode === 'route' ? 'route' : 'point';
+  stopJoystick();
+  mode = nextMode === 'route' ? 'route' : nextMode === 'joystick' ? 'joystick' : 'point';
   document.getElementById('pointTab').classList.toggle('active', mode === 'point');
   document.getElementById('routeTab').classList.toggle('active', mode === 'route');
+  document.getElementById('joystickTab').classList.toggle('active', mode === 'joystick');
+  document.getElementById('floatPointBtn').classList.toggle('active', mode === 'point');
+  document.getElementById('floatRouteBtn').classList.toggle('active', mode === 'route');
+  document.getElementById('floatJoystickBtn').classList.toggle('active', mode === 'joystick');
   document.getElementById('routePanel').classList.toggle('show', mode === 'route');
-  marker.setOpacity(mode === 'point' ? 1 : 0);
-  if (mode === 'route') toast('點擊地圖可依序加入路線節點');
+  document.getElementById('joystickPanel').classList.toggle('show', mode === 'joystick');
+  renderMapObjects();
+  if (mode === 'route') toast('點選地圖可依序加入路線節點');
+  if (mode === 'joystick') toast('按住搖桿方向即可移動');
+}
+
+function currentMapHeading() {
+  if (northLocked) return 0;
+  if (googleMap && Number.isFinite(googleMap.getHeading())) return googleMap.getHeading();
+  if (appleMap && Number.isFinite(appleMap.rotation)) return appleMap.rotation;
+  return 0;
+}
+function moveByBearing(bearing, elapsedMs) {
+  const speedKph = Math.min(300, Math.max(.5, parseFloat(document.getElementById('joySpeedInput').value) || 4.5));
+  const distance = speedKph / 3.6 * elapsedMs / 1000;
+  const angle = (bearing + currentMapHeading()) * Math.PI / 180;
+  const earth = 6378137;
+  const dLat = distance * Math.cos(angle) / earth;
+  const dLon = distance * Math.sin(angle) / (earth * Math.max(.1, Math.cos(lat * Math.PI / 180)));
+  setPos(lat + dLat * 180 / Math.PI, lon + dLon * 180 / Math.PI);
+  moveMapTo(lat, lon, googleMap ? googleMap.getZoom() : 16);
+  document.getElementById('joyState').textContent = '移動中 · ' + lon.toFixed(6) + ', ' + lat.toFixed(6);
+  if (Date.now() - joystickLastSave >= 900) saveJoystickPosition();
+}
+async function saveJoystickPosition() {
+  if (joystickSaving) return;
+  joystickSaving = true; joystickLastSave = Date.now();
+  try {
+    const radius = parseInt(document.getElementById('radiusInput').value) || 0;
+    const response = await fetch(SAVE_API + '?lon=' + lon + '&lat=' + lat + '&acc=25&randomRadius=' + radius, {method:'GET',mode:'cors',cache:'no-store'});
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || '寫入失敗');
+    activeLon = lon; activeLat = lat; renderWlocSwitch(true, true);
+  } catch (e) { document.getElementById('joyState').textContent = '無法寫入 WLOC'; }
+  finally { joystickSaving = false; }
+}
+function startJoystick(bearing) {
+  if (mode !== 'joystick') return;
+  stopJoystick(false);
+  moveByBearing(bearing, 250);
+  joystickTimer = setInterval(() => moveByBearing(bearing, 250), 250);
+}
+function stopJoystick(saveFinal = true) {
+  if (joystickTimer) { clearInterval(joystickTimer); joystickTimer = null; if (saveFinal) saveJoystickPosition(); }
+  const state = document.getElementById('joyState');
+  if (state && mode === 'joystick') state.textContent = '按住方向移動';
 }
 
 function distanceMeters(a, b) {
@@ -416,28 +543,7 @@ function compactRoute(points, maxPoints) {
 }
 
 function renderRoute() {
-  if (routeLine) map.removeLayer(routeLine);
-  routeMarkers.forEach(m => map.removeLayer(m));
-  routeMarkers = [];
-  const display = routePoints.map(p => {
-    const d = toDisplay(p[0], p[1]);
-    return [d.lat, d.lon];
-  });
-  if (display.length > 1) routeLine = L.polyline(display, {color:'#007aff',weight:5,opacity:.88}).addTo(map);
-  else routeLine = null;
-  if (display.length && display.length <= 40) {
-    const icon = L.divIcon({className:'route-node',iconSize:[14,14],iconAnchor:[7,7]});
-    display.forEach((p, i) => {
-      const m = L.marker(p, {icon, draggable:true}).addTo(map);
-      m.on('dragend', e => {
-        const pos = e.target.getLatLng();
-        const w = fromDisplay(pos.lat, pos.lng);
-        routePoints[i] = [w.lat, w.lon];
-        renderRoute();
-      });
-      routeMarkers.push(m);
-    });
-  }
+  renderMapObjects();
   const metrics = routeMetrics(routePoints);
   const speed = parseFloat(document.getElementById('speedInput').value) || 4.5;
   document.getElementById('routePoints').textContent = routePoints.length;
@@ -463,8 +569,7 @@ function reverseRoute() {
   if (routePoints.length < 2) return toast('路線至少需要兩個點');
   routePoints.reverse();
   renderRoute();
-  const bounds = routeLine.getBounds();
-  map.fitBounds(bounds, {padding:[24,24]});
+  fitRoute();
   toast('路線方向已反轉');
 }
 
@@ -538,7 +643,7 @@ function loadSavedRoute(index) {
   document.getElementById('loopInput').checked = !!route.loop;
   setMode('route');
   renderRoute();
-  if (routeLine) map.fitBounds(routeLine.getBounds(), {padding:[24,24]});
+  fitRoute();
   toast('已載入路線：' + route.name);
 }
 
@@ -572,7 +677,7 @@ function importGpx(event) {
       if (routePoints.length < 2) throw new Error('GPX 內沒有足夠的路線點');
       setMode('route');
       renderRoute();
-      map.fitBounds(routeLine.getBounds(), {padding:[24,24]});
+      fitRoute();
       toast('已匯入 ' + parsed.length + ' 點，裝置儲存使用 ' + routePoints.length + ' 點');
     } catch (e) {
       toast(e.message || '無法讀取 GPX', 3500);
@@ -709,7 +814,7 @@ function renderFavs() {
   const clearBtn = document.getElementById('clearAllBtn');
   clearBtn.style.display = favs.length ? '' : 'none';
   if (!favs.length) {
-    el.innerHTML = '<div class="fav-empty">暂无收藏，选好位置后点击「收藏位置」</div>';
+    el.innerHTML = '<div class="fav-empty">暫無收藏，選好位置後點選「收藏位置」</div>';
     return;
   }
   el.innerHTML = favs.map((f, i) => {
@@ -718,9 +823,9 @@ function renderFavs() {
       '<div class="fav-info">' +
         '<div class="fav-name">' + escHtml(f.name) + '<\\/div>' +
         '<div class="fav-coords">' + f.lon.toFixed(6) + ', ' + f.lat.toFixed(6) + '<\\/div>' +
-        (isActive ? '<div class="fav-active">\\u2713 当前生效<\\/div>' : '') +
+        (isActive ? '<div class="fav-active">\\u2713 當前生效<\\/div>' : '') +
       '<\\/div>' +
-      '<button class="fav-del" onclick="event.stopPropagation();delFav(' + i + ')" title="删除">\\u00d7<\\/button>' +
+      '<button class="fav-del" onclick="event.stopPropagation();delFav(' + i + ')" title="刪除">\\u00d7<\\/button>' +
     '<\\/div>';
   }).join('');
 }
@@ -730,7 +835,7 @@ function escHtml(s) {
 }
 
 function addFav() {
-  if (!selected) { toast('请先在地图上选择一个位置'); return; }
+  if (!selected) { toast('請先在地圖上選擇一個位置'); return; }
   document.getElementById('favModalCoords').textContent = lon.toFixed(6) + ', ' + lat.toFixed(6);
   document.getElementById('favNameInput').value = '';
   document.getElementById('favModal').classList.add('show');
@@ -743,7 +848,7 @@ function closeFavModal() {
 
 function confirmFav() {
   const name = document.getElementById('favNameInput').value.trim();
-  if (!name) { toast('请输入备注名称'); return; }
+  if (!name) { toast('請輸入備註名稱'); return; }
   const favs = getFavs();
   favs.push({ name, lon, lat, time: new Date().toISOString() });
   saveFavs(favs);
@@ -766,11 +871,11 @@ function delFav(i) {
   favs.splice(i, 1);
   saveFavs(favs);
   renderFavs();
-  toast('已删除: ' + name);
+  toast('已刪除: ' + name);
 }
 
 function clearAllFav() {
-  if (!confirm('确定清空所有收藏？')) return;
+  if (!confirm('確定清空所有收藏？')) return;
   saveFavs([]);
   renderFavs();
   toast('已清空所有收藏');
@@ -806,7 +911,7 @@ async function toggleWloc(enabled) {
 
 function queryActive() {
   const el = document.getElementById('activeValue');
-  el.textContent = '查询中...';
+  el.textContent = '查詢中...';
   fetch(SAVE_API + '?action=query', { method:'GET', mode:'cors', cache:'no-store' })
     .then(r => r.json())
     .then(d => {
@@ -823,24 +928,24 @@ function queryActive() {
           startRouteTimer();
         }
         const rr = d.randomRadius || 0;
-        el.textContent = activeRoute ? '路線模式 · ' + (activeRoute.status === 'paused' ? '已暫停' : '移動中') + ' · ' + Number(activeRoute.speedKph).toFixed(1) + ' km/h' : '经度 ' + activeLon.toFixed(6) + '  纬度 ' + activeLat.toFixed(6) + (d.accuracy ? '  精度 ' + d.accuracy + 'm' : '') + (rr ? '  扰动 ' + rr + 'm' : '');
+        el.textContent = activeRoute ? '路線模式 · ' + (activeRoute.status === 'paused' ? '已暫停' : '移動中') + ' · ' + Number(activeRoute.speedKph).toFixed(1) + ' km/h' : '經度 ' + activeLon.toFixed(6) + '  緯度 ' + activeLat.toFixed(6) + (d.accuracy ? '  精度 ' + d.accuracy + 'm' : '') + (rr ? '  擾動 ' + rr + 'm' : '');
         document.getElementById('radiusInput').value = rr;
         renderFavs();
       } else {
         activeLon = null; activeLat = null;
         activeRoute = null;
         renderWlocSwitch(false, false);
-        el.textContent = '无已保存的坐标';
+        el.textContent = '無已儲存的座標';
         renderFavs();
       }
     })
     .catch(() => {
-      el.textContent = '查询失败 (需要代理模块支持)';
+      el.textContent = '查詢失敗 (需要代理模組支援)';
     });
 }
 
 function clearActive() {
-  if (!confirm('确定清除设备上已保存的坐标？清除后将使用模块默认参数或停止修改定位。')) return;
+  if (!confirm('確定清除裝置上已儲存的座標？清除後將使用模組預設引數或停止修改定位。')) return;
   fetch(SAVE_API + '?action=clear', { method:'GET', mode:'cors', cache:'no-store' })
     .then(r => r.json())
     .then(d => {
@@ -851,17 +956,17 @@ function clearActive() {
         updateRouteStatus();
         document.getElementById('activeValue').textContent = '已清除';
         renderFavs();
-        toast('已清除设备坐标');
-      } else { toast('清除失败: ' + (d.error || ''), 3000); }
+        toast('已清除裝置座標');
+      } else { toast('清除失敗: ' + (d.error || ''), 3000); }
     })
-    .catch(() => { toast('清除失败 - 请检查模块配置', 3000); });
+    .catch(() => { toast('清除失敗 - 請檢查模組配置', 3000); });
 }
 
 /* ---- Save to device ---- */
 async function save() {
-  if (!selected) { toast('请先在地图上选择一个位置'); return; }
+  if (!selected) { toast('請先在地圖上選擇一個位置'); return; }
   const btn = document.getElementById('saveBtn');
-  btn.textContent = '储存中...'; btn.disabled = true;
+  btn.textContent = '儲存中...'; btn.disabled = true;
   showError(false);
   try {
     const radius = parseInt(document.getElementById('radiusInput').value) || 0;
@@ -872,28 +977,28 @@ async function save() {
     if (d.success) {
       activeLon = lon; activeLat = lat;
       renderWlocSwitch(true, true);
-      btn.textContent = '\\u2713 已储存'; btn.className = 'btn btn-primary success';
-      document.getElementById('status').textContent = '\\u2713 已写入: ' + lon.toFixed(6) + ', ' + lat.toFixed(6) + ' \\u00b7 ' + new Date().toLocaleTimeString('zh-CN');
-      document.getElementById('activeValue').textContent = '经度 ' + lon.toFixed(6) + '  纬度 ' + lat.toFixed(6) + '  精度 25m';
+      btn.textContent = '\\u2713 已儲存'; btn.className = 'btn btn-primary success';
+      document.getElementById('status').textContent = '\\u2713 已寫入: ' + lon.toFixed(6) + ', ' + lat.toFixed(6) + ' \\u00b7 ' + new Date().toLocaleTimeString('zh-CN');
+      document.getElementById('activeValue').textContent = '經度 ' + lon.toFixed(6) + '  緯度 ' + lat.toFixed(6) + '  精度 25m';
       renderFavs();
-      toast('\\u2713 坐标已写入设备，下次定位生效');
-      setTimeout(() => { btn.textContent='储存到设备'; btn.className='btn btn-primary'; btn.disabled=false; }, 2500);
+      toast('\\u2713 座標已寫入裝置，下次定位生效');
+      setTimeout(() => { btn.textContent='儲存到裝置'; btn.className='btn btn-primary'; btn.disabled=false; }, 2500);
     } else {
-      throw new Error(d.error || '写入失败');
+      throw new Error(d.error || '寫入失敗');
     }
   } catch(e) {
-    btn.textContent = '储存到设备'; btn.className = 'btn btn-primary'; btn.disabled = false;
+    btn.textContent = '儲存到裝置'; btn.className = 'btn btn-primary'; btn.disabled = false;
     showError(true);
-    toast('\\u2717 储存失败 - 请检查模块配置', 4000);
+    toast('\\u2717 儲存失敗 - 請檢查模組配置', 4000);
   }
 }
 
 function locateMe() {
-  if (!navigator.geolocation) return toast('浏览器不支持定位');
-  toast('获取位置中...');
+  if (!navigator.geolocation) return toast('瀏覽器不支援定位');
+  toast('獲取位置中...');
   navigator.geolocation.getCurrentPosition(
-    pos => { moveTo(pos.coords.latitude, pos.coords.longitude, 16); toast('已获取当前位置'); },
-    err => toast('定位失败: ' + err.message, 3000),
+    pos => { moveTo(pos.coords.latitude, pos.coords.longitude, 16); toast('已獲取當前位置'); },
+    err => toast('定位失敗: ' + err.message, 3000),
     { enableHighAccuracy:true, timeout:10000 }
   );
 }
@@ -904,15 +1009,13 @@ function parseMapUrl(text) {
   if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
   m = text.match(/@([0-9.-]+),([0-9.-]+)/);
   if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
-  m = text.match(/lnglat=([0-9.-]+),([0-9.-]+)/);
-  if (m) return { lat: parseFloat(m[2]), lon: parseFloat(m[1]) };
   m = text.match(/(?:location|center)=([0-9.-]+),([0-9.-]+)/);
   if (m) return { lat: parseFloat(m[2]), lon: parseFloat(m[1]) };
   m = text.match(/(-?[0-9]+\\.[0-9]+)[,\\s]+(-?[0-9]+\\.[0-9]+)/);
   if (m) {
     const a = parseFloat(m[1]), b = parseFloat(m[2]);
-    // 纬度绝对值不超过 90, 经度可达 180: 按绝对值判断谁是经度, 否则
-    // -122.009 这类西经会被当成纬度 (-122 < 90 恒成立)。
+    // 緯度絕對值不超過 90, 經度可達 180: 按絕對值判斷誰是經度, 否則
+    // -122.009 這類西經會被當成緯度 (-122 < 90 恆成立)。
     if (Math.abs(a) <= 90 && Math.abs(b) > 90) return { lat: a, lon: b };
     if (Math.abs(b) <= 90 && Math.abs(a) > 90) return { lat: b, lon: a };
     return { lat: a, lon: b };
@@ -920,12 +1023,12 @@ function parseMapUrl(text) {
   return null;
 }
 
-// 含链接的输入交给服务端 /api/parse: 浏览器读不到跨域 302 的 Location 头, 短链
-// 只能由 worker 展开; 服务端还认 coordinate= 并按来源做 GCJ-02->WGS84 换算。
-// 纯坐标文本本地直接解析 —— 它也是唯一不需要坐标系换算的输入, 免去一次往返。
+// 含連結的輸入交給服務端 /api/parse: 瀏覽器讀不到跨域跳轉資訊，
+// 因此由 Worker 解析 Apple / Google 連結。
+// 純座標文字本地直接解析 —— 它也是唯一不需要座標系換算的輸入, 免去一次往返。
 async function parseUrl() {
   const input = document.getElementById('urlInput').value.trim();
-  if (!input) return toast('请粘贴地图链接或坐标');
+  if (!input) return toast('請貼上地圖連結或座標');
 
   const low = input.toLowerCase();
   if (low.includes('http://') || low.includes('https://')) {
@@ -935,11 +1038,11 @@ async function parseUrl() {
       const r = await fetch('/api/parse?format=json&u=' + encodeURIComponent(input));
       data = await r.json();
     } catch (e) {
-      toast('解析服务不可达', 3000);
+      toast('解析服務不可達', 3000);
       return;
     }
     if (!data || data.error || typeof data.lat !== 'number') {
-      toast(data && data.error ? data.error : '无法解析坐标，请检查链接格式', 3000);
+      toast(data && data.error ? data.error : '無法解析座標，請檢查連結格式', 3000);
       return;
     }
     moveTo(data.lat, data.lon, 15);
@@ -948,42 +1051,50 @@ async function parseUrl() {
   }
 
   const result = parseMapUrl(input);
-  if (!result) { toast('无法解析坐标，请检查链接格式', 3000); return; }
+  if (!result) { toast('無法解析座標，請檢查連結格式', 3000); return; }
   moveTo(result.lat, result.lon, 15);
   toast('已解析: ' + result.lon.toFixed(4) + ', ' + result.lat.toFixed(4));
 }
 
 async function searchPlace() {
   const q = document.getElementById('searchInput').value.trim();
-  if (!q) return toast('请输入地名');
-  toast('搜索中...');
+  if (!q) return toast('請輸入地名');
+  if (!window.google || !google.maps) return toast('搜尋需要先設定並載入 Google 地圖');
+  toast('搜尋中...');
   try {
-    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
-    const results = await r.json();
-    if (!results.length) { toast('未找到: ' + q, 3000); return; }
-    const p = results[0];
-    moveTo(parseFloat(p.lat), parseFloat(p.lon), 15);
-    toast(p.display_name.slice(0, 40));
-  } catch(e) { toast('搜索失败', 3000); }
+    const geocoder = new google.maps.Geocoder();
+    const result = await new Promise((resolve, reject) => geocoder.geocode({address:q}, (results, status) => status === 'OK' && results[0] ? resolve(results[0]) : reject(new Error(status))));
+    const p = result.geometry.location;
+    moveTo(p.lat(), p.lng(), 15);
+    toast(result.formatted_address.slice(0, 40));
+  } catch(e) { toast('搜尋失敗', 3000); }
 }
 
 document.addEventListener('paste', e => {
   const text = (e.clipboardData||window.clipboardData).getData('text');
   if (!text) return;
-  if (!(text.includes('map') || text.includes('loc') || text.includes('lnglat') || /[0-9]+\\.[0-9]+/.test(text))) return;
+  if (!(text.includes('map') || text.includes('loc') || /[0-9]+\\.[0-9]+/.test(text))) return;
   const input = document.getElementById('urlInput');
-  // 粘贴目标本来就是这个输入框时, 让浏览器原生插入即可; 此处再赋一次值,
-  // 原生插入会叠加在后面, 结果是同一段文本出现两遍。
+  // 貼上目標本來就是這個輸入框時, 讓瀏覽器原生插入即可; 此處再賦一次值,
+  // 原生插入會疊加在後面, 結果是同一段文字出現兩遍。
   if (e.target !== input) input.value = text;
   setTimeout(parseUrl, 200);
 });
 document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') searchPlace(); });
 document.getElementById('urlInput').addEventListener('keydown', e => { if(e.key==='Enter') parseUrl(); });
+document.getElementById('floatingInput').addEventListener('keydown', e => { if(e.key==='Enter') parseFloatingInput(); });
 document.getElementById('favNameInput').addEventListener('keydown', e => { if(e.key==='Enter') confirmFav(); });
 document.getElementById('routeNameInput').addEventListener('keydown', e => { if(e.key==='Enter') confirmSaveRoute(); });
+document.querySelectorAll('.joy-btn').forEach(btn => {
+  const start = e => { e.preventDefault(); startJoystick(Number(btn.dataset.bearing)); };
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+});
+['pointerup','pointercancel','blur'].forEach(type => window.addEventListener(type, () => stopJoystick()));
 
 renderFavs();
 renderSavedRoutes();
+switchMapProvider('google');
 queryActive();
 <\/script>
 </body>

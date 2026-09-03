@@ -414,25 +414,25 @@ function i(r = {}) {
     case "Surge":
       (r.policy && a.set(r, "headers.X-Surge-Policy", r.policy),
         t.log(
-          " 执行结束!",
+          " 執行結束!",
           ` ${new Date().getTime() / 1e3 - $script.startTime} 秒`,
         ),
         $done(r));
       break;
     case "Loon":
       (r.policy && (r.node = r.policy),
-        t.log(" 执行结束!", ` ${(new Date() - $script.startTime) / 1e3} 秒`),
+        t.log(" 執行結束!", ` ${(new Date() - $script.startTime) / 1e3} 秒`),
         $done(r));
       break;
     case "Stash":
       (r.policy &&
         a.set(r, "headers.X-Stash-Selected-Proxy", encodeURI(r.policy)),
-        t.log(" 执行结束!", ` ${(new Date() - $script.startTime) / 1e3} 秒`),
+        t.log(" 執行結束!", ` ${(new Date() - $script.startTime) / 1e3} 秒`),
         $done(r));
       break;
     case "Egern":
     case "Shadowrocket":
-      (t.log(" 执行结束!"), $done(r));
+      (t.log(" 執行結束!"), $done(r));
       break;
     case "Quantumult X":
       switch (
@@ -453,7 +453,7 @@ function i(r = {}) {
           break;
         default:
           throw new TypeError(
-            `${Function.name}: 参数类型错误, status 必须为数字或字符串`,
+            `${Function.name}: 引數型別錯誤, status 必須為數字或字串`,
           );
       }
       (r.body instanceof ArrayBuffer
@@ -465,15 +465,15 @@ function i(r = {}) {
             )),
             (r.body = void 0))
           : r.body && (r.bodyBytes = void 0),
-        t.log(" 执行结束!"),
+        t.log(" 執行結束!"),
         $done(r));
       break;
     case "Worker":
     default:
-      t.log(" 执行结束!");
+      t.log(" 執行結束!");
       break;
     case "Node.js":
-      (t.log(" 执行结束!"), process.exit(1));
+      (t.log(" 執行結束!"), process.exit(1));
   }
 }
 class o {
@@ -2420,13 +2420,13 @@ async function Pe(e, a, r) {
       }
       return [];
     })(a.bodyBytes || a.rawBody || a.body);
-    if (!e.length) return (t.warn("[wloc] 无二进制 body，跳过"), a);
+    if (!e.length) return (t.warn("[wloc] 無二進位制 body，跳過"), a);
     if (
       (t.debug(`[wloc] input length=${e.length} gzip=${Ue(e)}`),
       null == r.longitude || null == r.latitude)
     )
       return (
-        t.info("[wloc] 透传模式：未设置坐标，不修改响应（恢复真实定位）"),
+        t.info("[wloc] 透傳模式：未設定座標，不修改響應（恢復真實定位）"),
         a
       );
     let n = e;
@@ -2473,7 +2473,7 @@ async function Pe(e, a, r) {
       (a.status = 200),
       (a.statusCode = 200),
       t.info(
-        `[wloc] 目标坐标: ${i.longitude},${i.latitude} 精度=${i.accuracy} 扰动=${i.randomDistance?.toFixed(1) || 0}m patched=${s.locations}`,
+        `[wloc] 目標座標: ${i.longitude},${i.latitude} 精度=${i.accuracy} 擾動=${i.randomDistance?.toFixed(1) || 0}m patched=${s.locations}`,
       ),
       a
     );
@@ -2567,7 +2567,7 @@ function Ze() {
         const e = o.getItem("wloc_settings");
         if (e && "object" == typeof e) return e;
       } catch (e) {
-        t.debug(`[settings] 持久化数据读取失败: ${e.message}`);
+        t.debug(`[settings] 持久化資料讀取失敗: ${e.message}`);
       }
       return null;
     })(),
@@ -2584,7 +2584,7 @@ function Ze() {
     if (a.enabled === false) {
       ((r.longitude = null),
         (r.latitude = null),
-        t.info("[settings] WLOC 已关闭：透传真实定位"));
+        t.info("[settings] WLOC 已關閉：透傳真實定位"));
       return r;
     }
     if (
@@ -2595,7 +2595,7 @@ function Ze() {
     ) {
       ((r.longitude = null),
         (r.latitude = null),
-        t.info("[settings] 尚未保存坐标：透传真实定位"));
+        t.info("[settings] 尚未儲存座標：透傳真實定位"));
       return r;
     }
     const e = WlocRoutePosition(a.route, Date.now());
@@ -2610,18 +2610,18 @@ function Ze() {
       a.accuracy && (r.accuracy = parseInt(a.accuracy, 10)),
       void 0 !== a.randomRadius &&
         (r.randomRadius = parseFloat(a.randomRadius)),
-      t.info(`[settings] 使用已保存坐标: ${r.longitude},${r.latitude}`));
+      t.info(`[settings] 使用已儲存座標: ${r.longitude},${r.latitude}`));
   }
   else if (113.94114 === r.longitude && 22.544577 === r.latitude)
     return (
       (r.longitude = null),
       (r.latitude = null),
-      t.info("[settings] 透传模式：持久化数据为空且为默认参数，不修改定位"),
+      t.info("[settings] 透傳模式：持久化資料為空且為預設引數，不修改定位"),
       r
     );
   return (
     null == r.longitude || null == r.latitude
-      ? t.info("[settings] 透传模式：未设置坐标，将不修改定位响应")
+      ? t.info("[settings] 透傳模式：未設定座標，將不修改定位響應")
       : t.debug(
           `[settings] lon=${r.longitude} lat=${r.latitude} acc=${r.accuracy} randomRadius=${r.randomRadius}`,
         ),
@@ -2637,7 +2637,7 @@ let ze;
       return;
     }
   })();
-  if (!e) return void t.warn("[wloc] 非响应模式，跳过");
+  if (!e) return void t.warn("[wloc] 非響應模式，跳過");
   const a = Ze();
   ((t.logLevel = a.logLevel), (ze = await Pe($request, e, a)));
 })()
@@ -2661,6 +2661,6 @@ let ze;
         i({});
         break;
       default:
-        (t.error("[wloc] 不合法的 response 类型: " + typeof ze), i({}));
+        (t.error("[wloc] 不合法的 response 型別: " + typeof ze), i({}));
     }
   });

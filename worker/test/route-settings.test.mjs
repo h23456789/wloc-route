@@ -137,5 +137,5 @@ test("WLOC response script calculates position from route time", async () => {
   vm.runInContext(script, context);
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.ok(done);
-  assert.match(logs.join("\n"), /使用已保存坐标: 121\.565,25\.0334/);
+  assert.match(logs.join("\n"), /使用已儲存座標: 121\.565,25\.0334/);
 });

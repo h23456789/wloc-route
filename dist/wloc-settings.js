@@ -414,25 +414,25 @@ function o(s = {}) {
     case "Surge":
       (s.policy && a.set(s, "headers.X-Surge-Policy", s.policy),
         t.log(
-          " 执行结束!",
+          " 執行結束!",
           ` ${new Date().getTime() / 1e3 - $script.startTime} 秒`,
         ),
         $done(s));
       break;
     case "Loon":
       (s.policy && (s.node = s.policy),
-        t.log(" 执行结束!", ` ${(new Date() - $script.startTime) / 1e3} 秒`),
+        t.log(" 執行結束!", ` ${(new Date() - $script.startTime) / 1e3} 秒`),
         $done(s));
       break;
     case "Stash":
       (s.policy &&
         a.set(s, "headers.X-Stash-Selected-Proxy", encodeURI(s.policy)),
-        t.log(" 执行结束!", ` ${(new Date() - $script.startTime) / 1e3} 秒`),
+        t.log(" 執行結束!", ` ${(new Date() - $script.startTime) / 1e3} 秒`),
         $done(s));
       break;
     case "Egern":
     case "Shadowrocket":
-      (t.log(" 执行结束!"), $done(s));
+      (t.log(" 執行結束!"), $done(s));
       break;
     case "Quantumult X":
       switch (
@@ -453,7 +453,7 @@ function o(s = {}) {
           break;
         default:
           throw new TypeError(
-            `${Function.name}: 参数类型错误, status 必须为数字或字符串`,
+            `${Function.name}: 引數型別錯誤, status 必須為數字或字串`,
           );
       }
       (s.body instanceof ArrayBuffer
@@ -465,15 +465,15 @@ function o(s = {}) {
             )),
             (s.body = void 0))
           : s.body && (s.bodyBytes = void 0),
-        t.log(" 执行结束!"),
+        t.log(" 執行結束!"),
         $done(s));
       break;
     case "Worker":
     default:
-      t.log(" 执行结束!");
+      t.log(" 執行結束!");
       break;
     case "Node.js":
-      (t.log(" 执行结束!"), process.exit(1));
+      (t.log(" 執行結束!"), process.exit(1));
   }
 }
 class c {
@@ -722,19 +722,19 @@ if ((t.debug(`[wloc-settings] url=${i}, action=${d}`), "query" === d))
           route: e.route || null,
           enabled: e.enabled !== false,
         }),
-        t.debug(`[wloc-settings] 查询: ${e.longitude}, ${e.latitude}`))
-      : (g = { success: !1, error: "无已保存的坐标" });
+        t.debug(`[wloc-settings] 查詢: ${e.longitude}, ${e.latitude}`))
+      : (g = { success: !1, error: "無已儲存的座標" });
   } catch (e) {
-    g = { success: !1, error: e.message || "读取失败" };
+    g = { success: !1, error: e.message || "讀取失敗" };
   }
 else if ("clear" === d)
   try {
     (c.setItem(n, null),
       (g = { success: !0 }),
-      t.info("[wloc-settings] 已清除坐标数据"));
+      t.info("[wloc-settings] 已清除座標資料"));
   } catch (e) {
-    ((g = { success: !1, error: e.message || "清除失败" }),
-      t.error(`[wloc-settings] 清除失败: ${e.message}`));
+    ((g = { success: !1, error: e.message || "清除失敗" }),
+      t.error(`[wloc-settings] 清除失敗: ${e.message}`));
   }
 else if ("route" === d)
   try {
@@ -742,9 +742,9 @@ else if ("route" === d)
       a = l(u.get("speed")),
       s = "1" === u.get("loop"),
       r = Date.now();
-    if (e.length < 2) throw new Error("路线至少需要两个有效坐标点");
+    if (e.length < 2) throw new Error("路線至少需要兩個有效座標點");
     if (!Number.isFinite(a) || a <= 0 || a > 300)
-      throw new Error("速度必须介于 0 到 300 km/h");
+      throw new Error("速度必須介於 0 到 300 km/h");
     const o = {
       longitude: e[0][1],
       latitude: e[0][0],
@@ -770,7 +770,7 @@ else if ("route" === d)
         })
       : (g = { success: !1, error: "Storage.setItem 返回 false" });
   } catch (e) {
-    g = { success: !1, error: e.message || "路线写入失败" };
+    g = { success: !1, error: e.message || "路線寫入失敗" };
   }
 else if ("disable" === d || "enable" === d)
   try {
@@ -798,12 +798,12 @@ else if ("disable" === d || "enable" === d)
       c.setItem(n, e),
       (g = { success: !0, enabled: e.enabled, route: e.route || null }));
   } catch (e) {
-    g = { success: !1, error: e.message || "开关状态更新失败" };
+    g = { success: !1, error: e.message || "開關狀態更新失敗" };
   }
 else if ("pause" === d || "resume" === d)
   try {
     const e = c.getItem(n);
-    if (!e || !e.route) throw new Error("没有正在使用的路线");
+    if (!e || !e.route) throw new Error("沒有正在使用的路線");
     const a = Date.now();
     if ("pause" === d && "running" === e.route.status)
       ((e.route.status = "paused"), (e.route.pausedAt = a));
@@ -817,7 +817,7 @@ else if ("pause" === d || "resume" === d)
       c.setItem(n, e),
       (g = { success: !0, route: e.route }));
   } catch (e) {
-    g = { success: !1, error: e.message || "路线状态更新失败" };
+    g = { success: !1, error: e.message || "路線狀態更新失敗" };
   }
 else {
   const e = l(u.get("lon") || u.get("longitude")),
@@ -829,7 +829,7 @@ else {
     Math.abs(a) > 90 ||
     Math.abs(e) > 180
   )
-    g = { success: !1, error: "缺少 lon/lat 参数" };
+    g = { success: !1, error: "缺少 lon/lat 引數" };
   else {
     let r = {};
     try {
@@ -858,11 +858,11 @@ else {
             accuracy: s,
             randomRadius: o.randomRadius ?? 0,
           }),
-          t.info(`[wloc-settings] 已保存: ${e}, ${a}`))
+          t.info(`[wloc-settings] 已儲存: ${e}, ${a}`))
         : ((g = { success: !1, error: "Storage.setItem 返回 false" }),
           t.error("[wloc-settings] setItem 返回 false"));
     } catch (e) {
-      ((g = { success: !1, error: e.message || "写入失败" }),
+      ((g = { success: !1, error: e.message || "寫入失敗" }),
         t.error(`[wloc-settings] ${e.message}`));
     }
   }
