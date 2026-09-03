@@ -23,6 +23,9 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .map-status-pill { flex:1; min-width:0; padding:13px; background:rgba(255,255,255,.96); border-radius:12px; box-shadow:0 3px 14px rgba(0,0,0,.2); color:#333; font:600 13px/1.2 "SF Mono",monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .map-config-error { position:absolute; inset:50% auto auto 50%; transform:translate(-50%,-50%); width:min(340px,calc(100% - 100px)); padding:18px; border-radius:16px; background:rgba(255,255,255,.96); color:#333; box-shadow:0 8px 30px rgba(0,0,0,.2); text-align:center; font-size:14px; line-height:1.55; }
 .map-config-error b { display:block; margin-bottom:5px; font-size:16px; }
+.location-legend { position:absolute; z-index:1100; top:72px; left:50%; transform:translateX(-50%); display:flex; gap:10px; padding:7px 10px; border-radius:99px; background:rgba(255,255,255,.94); box-shadow:0 2px 9px rgba(0,0,0,.17); color:#4b4b50; font-size:10px; white-space:nowrap; pointer-events:none; }
+.location-legend span { display:flex; align-items:center; gap:4px; }
+.legend-color { width:8px; height:8px; border-radius:50%; }
 .float-tools { position:absolute; z-index:1150; display:flex; flex-direction:column; gap:7px; }
 .float-tools.left { top:72px; left:10px; }
 .float-tools.right { top:72px; right:10px; }
@@ -30,6 +33,7 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .float-btn small { font-size:10px; line-height:1.1; margin-top:2px; }
 .float-btn.active { background:var(--blue); color:#fff; }
 .float-btn.danger.active { background:var(--green); }
+.float-btn.live-active { background:var(--green); color:#fff; }
 .joystick-panel { position:absolute; z-index:1200; left:50%; bottom:18px; transform:translateX(-50%); display:none; align-items:center; gap:12px; }
 .joystick-panel.show { display:flex; }
 .joystick { position:relative; width:164px; height:164px; border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 4px 18px rgba(0,0,0,.25); touch-action:none; }
@@ -90,6 +94,17 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .modal input:focus { border-color:var(--blue); }
 .modal .modal-btns { display:flex; gap:8px; }
 .modal .modal-btns .btn { padding:12px; }
+.move-marker-key { display:flex; justify-content:center; gap:18px; margin:-4px 0 14px; color:var(--gray); font-size:12px; }
+.move-marker-key span { display:flex; align-items:center; gap:6px; }
+.marker-dot { width:12px; height:12px; border-radius:50%; border:3px solid currentColor; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); }
+.marker-dot.blue { color:var(--blue); }
+.marker-dot.red { color:var(--red); }
+.move-summary { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+.move-summary > div { padding:12px 8px; border-radius:10px; background:var(--bg); text-align:center; }
+.move-summary b { display:block; color:#222; font-size:18px; margin-bottom:3px; }
+.move-summary span { color:var(--gray); font-size:11px; }
+.move-coords { padding:9px; margin-bottom:10px; border-radius:9px; background:#fff5f4; color:#9f241e; font:12px/1.45 "SF Mono",monospace; text-align:center; }
+.move-note { margin-bottom:14px; color:var(--gray); font-size:12px; line-height:1.45; text-align:center; }
 .mode-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:4px; background:var(--bg); border-radius:10px; margin-bottom:12px; }
 .mode-tab { border:0; background:transparent; border-radius:8px; padding:9px 8px; color:#666; font-size:14px; font-weight:600; cursor:pointer; }
 .mode-tab.active { background:#fff; color:var(--blue); box-shadow:0 1px 4px rgba(0,0,0,.12); }
@@ -135,6 +150,11 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
   <button class="float-btn" onclick="openToolPanel('controlPanel','WLOC 設定')" aria-label="開啟控制面板">☰</button>
   <div class="map-status-pill" id="floatingCoords">尚未選擇位置</div>
 </div>
+<div class="location-legend" aria-label="地圖位置圖例">
+  <span><i class="legend-color" style="background:#007aff"></i>WLOC</span>
+  <span><i class="legend-color" style="background:#34c759"></i>即時定位</span>
+  <span><i class="legend-color" style="background:#ff3b30"></i>目標</span>
+</div>
 <div class="float-tools left" aria-label="定位工具">
   <button class="float-btn active" id="floatPointBtn" onclick="setMode('point');openToolPanel('targetPanel','單點定位')" aria-label="單點定位">⌖<small>單點</small></button>
   <button class="float-btn" id="floatRouteBtn" onclick="setMode('route');openToolPanel('controlPanel','路線設定')" aria-label="手繪路線">⌁<small>路線</small></button>
@@ -144,7 +164,7 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
   <button class="float-btn" onclick="openSavedPanel()" aria-label="已儲存項目">▣<small>儲存</small></button>
 </div>
 <div class="float-tools right" aria-label="地圖工具">
-  <button class="float-btn" onclick="locateMe()" aria-label="目前位置">◎<small>定位</small></button>
+  <button class="float-btn" id="liveLocationBtn" onclick="locateMe()" aria-label="即時系統定位" aria-pressed="false">◎<small>定位</small></button>
   <button class="float-btn danger active" id="northLockBtn" onclick="toggleNorthLock()" aria-pressed="true" aria-label="固定向北">N<small>已鎖北</small></button>
 </div>
 <div class="joystick-panel" id="joystickPanel">
@@ -219,9 +239,9 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
       <span style="font-size:11px;color:var(--gray);line-height:1.3">每次定位在目標點周圍隨機偏移，0=關閉</span>
     </div>
     <div class="row">
-      <button class="btn btn-primary" id="saveBtn" onclick="save()">儲存到裝置</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="openMoveConfirm()">確認移動</button>
       <button class="btn btn-secondary" onclick="addFav()">收藏位置</button>
-      <button class="btn btn-secondary" onclick="locateMe()">當前位置</button>
+      <button class="btn btn-secondary" onclick="locateMe()">即時定位</button>
     </div>
   </div>
   <div class="card" id="favoritesPanel">
@@ -282,6 +302,22 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
     </div>
   </div>
 </div>
+<div class="modal-overlay" id="moveConfirmModal">
+  <div class="modal">
+    <h3>確認移動到此位置？</h3>
+    <div class="move-marker-key"><span><i class="marker-dot blue"></i>WLOC 位置</span><span><i class="marker-dot red"></i>移動位置</span></div>
+    <div class="move-summary">
+      <div><b id="moveDistance">--</b><span>直線距離</span></div>
+      <div><b id="moveCooldown">--</b><span>冷卻時間（10 km/h）</span></div>
+    </div>
+    <div class="move-coords" id="moveConfirmCoords"></div>
+    <div class="move-note" id="moveConfirmNote">只有按下「確定移動」才會將新座標寫入小火箭。</div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeMoveConfirm()">取消</button>
+      <button class="btn btn-danger" id="confirmMoveBtn" onclick="confirmMove()">確定移動</button>
+    </div>
+  </div>
+</div>
 <script>
 const MAP_CONFIG = ${mapConfig};
 const SAVE_API = 'https://gs-loc.apple.com/wloc-settings/save';
@@ -302,7 +338,8 @@ let northLocked = true;
 let joystickTimer = null;
 let joystickSaving = false;
 let joystickLastSave = 0;
-let googleMap, googleMarker, googleRouteLine, googleRouteMarkers = [];
+let liveWatchId = null, liveLat = null, liveLon = null, liveAccuracy = null;
+let googleMap, googleCandidateMarker, googleActiveMarker, googleLiveMarker, googleLiveAccuracyCircle, googleRouteLine, googleRouteMarkers = [];
 
 function mapError(message) {
   document.getElementById('map').innerHTML = '<div class="map-config-error"><b>地圖尚未啟用<\/b>' + message + '<br><br>請到 Cloudflare Worker 的「Settings → Variables and Secrets」設定後重新部署。<\/div>';
@@ -316,6 +353,7 @@ function loadScript(src) {
 function handleMapPick(la, lo) {
   if (mode === 'route') { routePoints.push([la, lo]); routeSource = 'manual'; renderRoute(); return; }
   setPos(la, lo);
+  if (mode === 'point') openMoveConfirm();
 }
 async function initGoogleMap() {
   if (!MAP_CONFIG.googleMapsApiKey) return mapError('尚未設定 Google 地圖金鑰。請在 Cloudflare 新增 GOOGLE_MAPS_API_KEY。');
@@ -326,21 +364,61 @@ async function initGoogleMap() {
   renderMapObjects();
 }
 async function initMap() {
-  googleMap = undefined; googleMarker = undefined; googleRouteLine = undefined; googleRouteMarkers = [];
+  googleMap = undefined; googleCandidateMarker = undefined; googleActiveMarker = undefined; googleLiveMarker = undefined; googleLiveAccuracyCircle = undefined; googleRouteLine = undefined; googleRouteMarkers = [];
   document.getElementById('map').innerHTML = '';
   try { await initGoogleMap(); }
   catch (e) { mapError('Google 地圖載入失敗，請檢查 API 金鑰、網域限制及 Maps JavaScript API 是否已啟用。'); }
 }
 function renderMapObjects() {
   if (googleMap) {
-    if (googleMarker) googleMarker.setMap(null);
+    if (googleCandidateMarker) googleCandidateMarker.setMap(null);
+    if (googleActiveMarker) googleActiveMarker.setMap(null);
+    if (googleLiveMarker) googleLiveMarker.setMap(null);
+    if (googleLiveAccuracyCircle) googleLiveAccuracyCircle.setMap(null);
     googleRouteMarkers.forEach(m => m.setMap(null)); googleRouteMarkers = [];
     if (googleRouteLine) googleRouteLine.setMap(null);
-    if (mode === 'point') googleMarker = new google.maps.Marker({position:{lat,lng:lon}, map:googleMap, draggable:true});
-    if (googleMarker) googleMarker.addListener('dragend', e => setPos(e.latLng.lat(), e.latLng.lng()));
+    if (activeLat !== null && activeLon !== null) googleActiveMarker = new google.maps.Marker({
+      position:{lat:activeLat,lng:activeLon}, map:googleMap, clickable:false, zIndex:20,
+      title:'小火箭目前儲存的 WLOC 位置', icon:locationPinIcon('#007aff')
+    });
+    if (mode === 'point' && selected) googleCandidateMarker = new google.maps.Marker({
+      position:{lat,lng:lon}, map:googleMap, draggable:true, zIndex:30,
+      title:'準備移動的位置', icon:locationPinIcon('#ff3b30')
+    });
+    if (googleCandidateMarker) googleCandidateMarker.addListener('dragend', e => { setPos(e.latLng.lat(), e.latLng.lng()); openMoveConfirm(); });
+    renderLiveLocation(false);
     if (routePoints.length > 1) googleRouteLine = new google.maps.Polyline({path:routePoints.map(p => ({lat:p[0],lng:p[1]})),strokeColor:'#007aff',strokeOpacity:.9,strokeWeight:5,map:googleMap});
     if (routePoints.length <= 40) routePoints.forEach((p, i) => { const m = new google.maps.Marker({position:{lat:p[0],lng:p[1]},map:googleMap,draggable:true,label:String(i+1)}); m.addListener('dragend', e => { routePoints[i]=[e.latLng.lat(),e.latLng.lng()]; renderRoute(); }); googleRouteMarkers.push(m); });
   }
+}
+function renderLiveLocation(centerMap) {
+  if (!googleMap || liveLat === null || liveLon === null) return;
+  const position = {lat:liveLat,lng:liveLon};
+  if (!googleLiveMarker) googleLiveMarker = new google.maps.Marker({
+    position, map:googleMap, clickable:false, zIndex:40, title:'iPhone 即時系統定位', icon:liveLocationIcon()
+  });
+  else googleLiveMarker.setPosition(position), googleLiveMarker.setMap(googleMap);
+  if (!googleLiveAccuracyCircle) googleLiveAccuracyCircle = new google.maps.Circle({
+    map:googleMap, center:position, radius:liveAccuracy || 0, strokeColor:'#22a06b', strokeOpacity:.65,
+    strokeWeight:1, fillColor:'#34c759', fillOpacity:.12, clickable:false, zIndex:10
+  });
+  else googleLiveAccuracyCircle.setCenter(position), googleLiveAccuracyCircle.setRadius(liveAccuracy || 0), googleLiveAccuracyCircle.setMap(googleMap);
+  if (centerMap) { googleMap.setCenter(position); if ((googleMap.getZoom() || 0) < 16) googleMap.setZoom(16); }
+}
+function liveLocationIcon() {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34">' +
+    '<circle cx="17" cy="17" r="14" fill="#34c759" fill-opacity=".2"/>' +
+    '<circle cx="17" cy="17" r="9" fill="#34c759" stroke="#fff" stroke-width="3"/>' +
+    '<circle cx="17" cy="17" r="3" fill="#fff"/></svg>';
+  return {url:'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize:new google.maps.Size(34,34), anchor:new google.maps.Point(17,17)};
+}
+function locationPinIcon(color) {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="54" height="64" viewBox="0 0 54 64">' +
+    '<ellipse cx="27" cy="57" rx="19" ry="5" fill="none" stroke="#bfc0c4" stroke-width="3"/>' +
+    '<path d="M27 3C15.4 3 6 12.4 6 24c0 14.2 15.1 24.9 21 31 5.9-6.1 21-16.8 21-31C48 12.4 38.6 3 27 3Z" fill="' + color + '" stroke="#fff" stroke-width="2"/>' +
+    '<circle cx="27" cy="24" r="9" fill="#fff"/>' +
+    '</svg>';
+  return {url:'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize:new google.maps.Size(43,51), anchor:new google.maps.Point(21.5,46)};
 }
 function moveMapTo(la, lo, zoom) {
   if (googleMap) googleMap.setCenter({lat:la,lng:lo}), googleMap.setZoom(zoom || 15);
@@ -390,6 +468,39 @@ function setPos(newLat, newLon) {
   renderMapObjects();
   document.getElementById('coords').textContent = '經度 ' + lon.toFixed(6) + '  緯度 ' + lat.toFixed(6);
   document.getElementById('floatingCoords').textContent = lon.toFixed(6) + ', ' + lat.toFixed(6);
+}
+
+function cooldownForMove() {
+  if (activeLat === null || activeLon === null) return null;
+  const meters = distanceMeters([activeLat, activeLon], [lat, lon]);
+  const rawMinutes = meters / 10000 * 60;
+  return { meters, minutes:Math.min(120, Math.max(0, Math.ceil(rawMinutes))), capped:rawMinutes > 120 };
+}
+
+function openMoveConfirm() {
+  if (!selected) return toast('請先在地圖上選擇一個位置');
+  const cooldown = cooldownForMove();
+  document.getElementById('moveConfirmCoords').textContent = '經度 ' + lon.toFixed(6) + '  緯度 ' + lat.toFixed(6);
+  document.getElementById('moveDistance').textContent = cooldown ? formatDistance(cooldown.meters) : '--';
+  document.getElementById('moveCooldown').textContent = cooldown ? cooldown.minutes + ' 分鐘' : '--';
+  document.getElementById('moveConfirmNote').textContent = cooldown
+    ? '依 10 km/h 估算' + (cooldown.capped ? '，計算結果超過上限，顯示 120 分鐘。' : '；只有按下「確定移動」才會寫入新座標。')
+    : '尚無已生效的目前位置，因此無法計算距離與冷卻時間；確認後才會寫入新座標。';
+  document.getElementById('moveConfirmModal').classList.add('show');
+}
+
+function closeMoveConfirm() {
+  document.getElementById('moveConfirmModal').classList.remove('show');
+}
+
+async function confirmMove() {
+  const btn = document.getElementById('confirmMoveBtn');
+  btn.disabled = true;
+  btn.textContent = '移動中...';
+  const ok = await save();
+  btn.disabled = false;
+  btn.textContent = '確定移動';
+  if (ok) closeMoveConfirm();
 }
 
 function moveTo(newLat, newLon, zoom) {
@@ -769,11 +880,26 @@ function updateRouteStatus() {
   }
   const pos = routePosition(activeRoute, Date.now());
   if (!pos) return;
+  // 路線進度由時間計算；同步移動藍色 WLOC 定位針，不必每秒重建整張地圖。
+  activeLat = pos.lat;
+  activeLon = pos.lon;
+  if (googleMap) {
+    if (!googleActiveMarker) {
+      googleActiveMarker = new google.maps.Marker({
+        position:{lat:activeLat,lng:activeLon}, map:googleMap, clickable:false, zIndex:20,
+        title:'路線中的 WLOC 位置', icon:locationPinIcon('#007aff')
+      });
+    } else {
+      googleActiveMarker.setPosition({lat:activeLat,lng:activeLon});
+      googleActiveMarker.setMap(googleMap);
+    }
+  }
   const percent = pos.total ? Math.min(100, pos.travelled/pos.total*100) : 0;
   document.getElementById('routeProgressBar').style.width = percent.toFixed(2) + '%';
   pauseBtn.disabled = false;
   pauseBtn.textContent = activeRoute.status === 'paused' ? '繼續' : '暫停';
   hint.textContent = (activeRoute.status === 'paused' ? '已暫停 · ' : pos.finished ? '已到達終點 · ' : '移動中 · ') + formatDistance(pos.travelled) + ' / ' + formatDistance(pos.total) + ' · ' + Number(activeRoute.speedKph).toFixed(1) + ' km/h';
+  if (liveWatchId === null) document.getElementById('floatingCoords').textContent = '路線 ' + activeLon.toFixed(6) + ', ' + activeLat.toFixed(6) + ' · ' + percent.toFixed(0) + '%';
 }
 
 function startRouteTimer() {
@@ -915,12 +1041,14 @@ function queryActive() {
         el.textContent = activeRoute ? '路線模式 · ' + (activeRoute.status === 'paused' ? '已暫停' : '移動中') + ' · ' + Number(activeRoute.speedKph).toFixed(1) + ' km/h' : '經度 ' + activeLon.toFixed(6) + '  緯度 ' + activeLat.toFixed(6) + (d.accuracy ? '  精度 ' + d.accuracy + 'm' : '') + (rr ? '  擾動 ' + rr + 'm' : '');
         document.getElementById('radiusInput').value = rr;
         renderFavs();
+        renderMapObjects();
       } else {
         activeLon = null; activeLat = null;
         activeRoute = null;
         renderWlocSwitch(false, false);
         el.textContent = '無已儲存的座標';
         renderFavs();
+        renderMapObjects();
       }
     })
     .catch(() => {
@@ -940,6 +1068,7 @@ function clearActive() {
         updateRouteStatus();
         document.getElementById('activeValue').textContent = '已清除';
         renderFavs();
+        renderMapObjects();
         toast('已清除裝置座標');
       } else { toast('清除失敗: ' + (d.error || ''), 3000); }
     })
@@ -948,7 +1077,7 @@ function clearActive() {
 
 /* ---- Save to device ---- */
 async function save() {
-  if (!selected) { toast('請先在地圖上選擇一個位置'); return; }
+  if (!selected) { toast('請先在地圖上選擇一個位置'); return false; }
   const btn = document.getElementById('saveBtn');
   btn.textContent = '儲存中...'; btn.disabled = true;
   showError(false);
@@ -960,30 +1089,69 @@ async function save() {
     const d = await r.json();
     if (d.success) {
       activeLon = lon; activeLat = lat;
+      selected = false;
       renderWlocSwitch(true, true);
-      btn.textContent = '\\u2713 已儲存'; btn.className = 'btn btn-primary success';
+      btn.textContent = '\\u2713 已移動'; btn.className = 'btn btn-primary success';
       document.getElementById('status').textContent = '\\u2713 已寫入: ' + lon.toFixed(6) + ', ' + lat.toFixed(6) + ' \\u00b7 ' + new Date().toLocaleTimeString('zh-CN');
       document.getElementById('activeValue').textContent = '經度 ' + lon.toFixed(6) + '  緯度 ' + lat.toFixed(6) + '  精度 25m';
       renderFavs();
+      renderMapObjects();
       toast('\\u2713 座標已寫入裝置，下次定位生效');
-      setTimeout(() => { btn.textContent='儲存到裝置'; btn.className='btn btn-primary'; btn.disabled=false; }, 2500);
+      setTimeout(() => { btn.textContent='確認移動'; btn.className='btn btn-primary'; btn.disabled=false; }, 2500);
+      return true;
     } else {
       throw new Error(d.error || '寫入失敗');
     }
   } catch(e) {
-    btn.textContent = '儲存到裝置'; btn.className = 'btn btn-primary'; btn.disabled = false;
+    btn.textContent = '確認移動'; btn.className = 'btn btn-primary'; btn.disabled = false;
     showError(true);
     toast('\\u2717 儲存失敗 - 請檢查模組配置', 4000);
+    return false;
   }
+}
+
+function setLiveButton(active) {
+  const btn = document.getElementById('liveLocationBtn');
+  btn.classList.toggle('live-active', active);
+  btn.setAttribute('aria-pressed', String(active));
+  btn.querySelector('small').textContent = active ? '追蹤中' : '定位';
+}
+
+function stopLiveLocation() {
+  if (liveWatchId !== null) navigator.geolocation.clearWatch(liveWatchId);
+  liveWatchId = null;
+  setLiveButton(false);
+  if (googleLiveMarker) { googleLiveMarker.setMap(null); googleLiveMarker = null; }
+  if (googleLiveAccuracyCircle) { googleLiveAccuracyCircle.setMap(null); googleLiveAccuracyCircle = null; }
+  toast('已停止即時定位追蹤');
 }
 
 function locateMe() {
   if (!navigator.geolocation) return toast('瀏覽器不支援定位');
-  toast('獲取位置中...');
-  navigator.geolocation.getCurrentPosition(
-    pos => { moveTo(pos.coords.latitude, pos.coords.longitude, 16); toast('已獲取當前位置'); },
-    err => toast('定位失敗: ' + err.message, 3000),
-    { enableHighAccuracy:true, timeout:10000 }
+  if (liveWatchId !== null) return stopLiveLocation();
+  toast('正在取得 iPhone 即時系統定位...');
+  setLiveButton(true);
+  let firstFix = true;
+  liveWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      liveLat = pos.coords.latitude;
+      liveLon = pos.coords.longitude;
+      liveAccuracy = Number(pos.coords.accuracy) || 0;
+      renderLiveLocation(firstFix);
+      const gap = activeLat !== null && activeLon !== null ? distanceMeters([activeLat,activeLon],[liveLat,liveLon]) : null;
+      document.getElementById('floatingCoords').textContent = '即時 ' + liveLon.toFixed(6) + ', ' + liveLat.toFixed(6) + (gap === null ? '' : ' · 距 WLOC ' + formatDistance(gap));
+      if (firstFix) {
+        toast(gap === null ? '已開始顯示即時系統定位' : '即時定位距 WLOC ' + formatDistance(gap), 3500);
+        firstFix = false;
+      }
+    },
+    err => {
+      if (liveWatchId !== null) navigator.geolocation.clearWatch(liveWatchId);
+      liveWatchId = null;
+      setLiveButton(false);
+      toast('即時定位失敗: ' + err.message, 3500);
+    },
+    { enableHighAccuracy:true, maximumAge:0, timeout:15000 }
   );
 }
 

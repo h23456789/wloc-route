@@ -100,7 +100,7 @@ https://wloc-spoofer.<你的 Cloudflare 子網域>.workers.dev/
 1. 關閉 WLOC 總開關。
 2. 關閉 iPhone 定位服務。
 3. 等幾秒後重新開啟定位服務。
-4. 開啟 Apple 地圖確認真實位置。
+4. 開啟 Google 地圖確認位置。
 
 iOS 26 以上若仍使用舊定位快取，請在關閉 WLOC 與定位服務後重新啟動 iPhone。
 
